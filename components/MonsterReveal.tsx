@@ -6,11 +6,12 @@ interface MonsterRevealProps {
   monster: Monster;
   onOpenDiary: () => void;
   onAttack: () => void;
+  onDevKill: () => void;
   onRestart: () => void;
   powerBank: number;
 }
 
-const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onAttack, onRestart, powerBank }) => {
+const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onAttack, onDevKill, onRestart, powerBank }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center p-6 w-full max-w-md mx-auto animate-fade-in-up">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">あなたのストレスからモンスターが生まれました！</h1>
@@ -40,6 +41,12 @@ const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onA
             className="w-full px-8 py-4 bg-orange-500 text-white rounded-xl font-semibold text-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none"
         >
             貯めたパワー ({powerBank}) で攻撃する
+        </button>
+        <button
+            onClick={onDevKill}
+            className="w-full py-2 text-xs text-slate-400 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+        >
+            ⚡ [開発用] ワンパンで倒す
         </button>
         <button
             onClick={onOpenDiary}

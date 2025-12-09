@@ -327,6 +327,15 @@ const App: React.FC = () => {
     
     setAppState('ATTACK_RESULT');
   };
+
+  const handleDevKill = () => {
+      if (!monster) return;
+      // 開発用：パワーを消費せずに即死させる
+      setAttackPower(monster.currentHP);
+      const updatedMonster = { ...monster, currentHP: 0 };
+      setMonster(updatedMonster);
+      setAppState('ATTACK_RESULT');
+  };
   
   const handleAddToDo = (item: Omit<ToDoItem, 'id' | 'isCompleted' | 'isFavorite' | 'order'>) => {
     const newToDo: ToDoItem = {
@@ -429,6 +438,7 @@ const App: React.FC = () => {
                     onSaveName={handleSaveAiName}
                     monster={monster}
                     onAttack={() => handleAttack(powerBank)}
+                    onDevKill={handleDevKill}
                     powerBank={powerBank}
                     toDoList={toDoList}
                     onToggleToDo={handleToggleToDo}
@@ -451,6 +461,7 @@ const App: React.FC = () => {
                 monster={monster} 
                 onOpenDiary={() => handleOpenDiaryEditor(null)}
                 onAttack={() => handleAttack(powerBank)}
+                onDevKill={handleDevKill}
                 onRestart={handleRestart}
                 powerBank={powerBank}
             />
@@ -466,6 +477,7 @@ const App: React.FC = () => {
                     onSaveName={handleSaveAiName}
                     monster={monster}
                     onAttack={() => handleAttack(powerBank)}
+                    onDevKill={handleDevKill}
                     powerBank={powerBank}
                     toDoList={toDoList}
                     onToggleToDo={handleToggleToDo}

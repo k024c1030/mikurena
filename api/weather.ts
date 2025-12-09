@@ -8,7 +8,8 @@ export default async function handler(
 ) {
 
   //APIキーの確認。環境変数から鍵を取り出す
-  const apikey = process.env.OWM_API_KEY;
+  // Fix: Renamed to apiKey to match usage
+  const apiKey = process.env.OWM_API_KEY;
 
   //もし鍵が設定されてなかったら、エラーを返して終了
   if (!apiKey) {
@@ -30,6 +31,10 @@ try {
 
 
   console.log(`APIリクエスト送信: ${url}`);
+  
+  // Fix: Execute fetch request and assign to weatherRes
+  const weatherRes = await fetch(url);
+
   // 天気サイトから「失敗」と言われたらエラー
   if (!weatherRes.ok) {
     throw new Error(`OpenWeatherMap Error: ${weatherRes.statusText}`);
@@ -65,4 +70,3 @@ function mapCondition(apiCondition: string): string {
   if (lower.includes('thunder')) return 'rain'; // 雷も雨扱いに
   return 'sun'; // 分からない時はとりあえず晴れに
 }
-

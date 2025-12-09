@@ -104,10 +104,41 @@ const analyzeStress = async (history: ChatMessage[]): Promise<StressAnalysis> =>
     return JSON.parse(jsonText) as StressAnalysis;
 };
 
-    export async function generateMonsterImage(_prompt: string): Promise<string> {
-        // ローカルの固定モンスター画像を返す
+export async function generateMonsterImage(prompt: string): Promise<string> {
+    try {
+        const ai = getAi();
+        // 画像生成用のモデルを使用
+        // プロンプトを調整して、ゆるキャラ風（Yuru-chara）、2Dフラット、人間禁止を指定
+        const finalPrompt = `A flat 2D vector illustration of a cute 'Yuru-chara' style mascot monster.
+        Description: ${prompt}
+        Style: Flat design, thick bold outlines, simple cute shapes, sticker art style, vibrant pastel colors, white background.
+        IMPORTANT: This is a non-human creature. NO humans, NO anime girls, NO anime boys. Just a cute weird creature.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: finalPrompt }],
+            },
+            // nano banana series models does not support responseMimeType or responseSchema
+        });
+
+        // レスポンスから画像データを探す
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) {
+                const base64Data = part.inlineData.data;
+                const mimeType = part.inlineData.mimeType || 'image/png';
+                return `data:${mimeType};base64,${base64Data}`;
+            }
+        }
+        
+        throw new Error("No image generated");
+
+    } catch (error) {
+        console.error("Image generation failed:", error);
+        // 生成失敗時はフォールバック画像を使用
         return '/monsters/kaiju_brown.png';
     }
+}
 
 
 

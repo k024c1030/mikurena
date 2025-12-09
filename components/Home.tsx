@@ -9,6 +9,7 @@ interface HomeProps {
   aiName: string | null;
   monster: Monster | null;
   onAttack: () => void;
+  onDevKill: () => void;
   powerBank: number;
   toDoList: ToDoItem[];
   onToggleToDo: (id: number) => void;
@@ -19,7 +20,7 @@ interface HomeProps {
   onSaveMood: (record: MoodRecord) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, powerBank, toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood }) => {
+const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, onDevKill, powerBank, toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood }) => {
   const [nameInput, setNameInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -57,13 +58,19 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
                     HP: <span className="font-bold text-red-600 text-lg">{monster.currentHP}</span> / {monster.score}
                 </p>
             </div>
-            <div className="w-full mt-6">
+            <div className="w-full mt-6 space-y-2">
                 <button
                     onClick={onAttack}
                     disabled={powerBank <= 0}
                     className="w-full px-8 py-4 bg-orange-500 text-white rounded-xl font-semibold text-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none"
                 >
                     貯めたパワー ({powerBank}) で攻撃する
+                </button>
+                 <button
+                    onClick={onDevKill}
+                    className="w-full py-2 text-xs text-slate-400 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                >
+                    ⚡ [開発用] ワンパンで倒す
                 </button>
             </div>
         </div>
