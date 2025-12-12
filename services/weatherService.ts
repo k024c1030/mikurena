@@ -1,8 +1,8 @@
 import type { WeatherData, LocationPreference } from '../types';
 
-/**
- * 本番用：VercelのServerless Function (api/weather)を呼び出す
- */
+// ------------------------------------------------------------------
+// 天気データを取得する関数
+// ------------------------------------------------------------------
 export const fetchWeather = async (params: LocationPreference): Promise<WeatherData> => {
   
   // 1. 宛先を作る
@@ -17,6 +17,11 @@ export const fetchWeather = async (params: LocationPreference): Promise<WeatherD
   } else {
     throw new Error("位置情報パラメータが不足しています。");
   }
+
+  // ★ ここがポイント！
+  // URLの最後に現在時刻（timestamp）をくっつけます。
+  // これでブラウザは「毎回違うリクエストだ」と認識し、キャッシュ（古いデータ）を無視します。
+  url += `&t=${new Date().getTime()}`;
 
   console.log(`天気データを取得中...: ${url}`);
 
