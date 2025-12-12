@@ -180,7 +180,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             const fetchedDate = new Date(weather.updated_at);
             const dateString = `${fetchedDate.getMonth() + 1}/${fetchedDate.getDate()}`;
             const weekDay = ['日', '月', '火', '水', '木', '金', '土'][fetchedDate.getDay()];
-            const timeString = fetchedDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+            const timeString = fetchedDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit'});
 
             return (
                 <div className="relative w-full h-full flex flex-col justify-between">
