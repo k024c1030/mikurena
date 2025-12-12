@@ -61,16 +61,23 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
     };
 
     const getWeatherData = useCallback(async (pref: LocationPreference) => {
-        setIsLoading(true);
+        setIsLoading(true); // ぐるぐる開始
         setError(null);
+
         try {
-            const data = await fetchWeather(pref);
-            setWeather(data);
+            // Promise.allを使うと「API通信」と「演出用の待ち時間」を同時に走らせられます
+            // これで「最低でも1秒間」はぐるぐるし続けます
+            const [data] = await Promise.all([
+                fetchWeather(pref), //天気を取りに行く
+                new Promise(resolve => setTimeout(resolve, 1000)) //演出として１秒待つ
+            ]);
+
+            setWeather(data); //データ更新
         } catch (err) {
             console.error(err);
             setError('天気を更新できませんでした');
         } finally {
-            setIsLoading(false);
+            setIsLoading(false); //ぐるぐる終了
         }
     }, []);
 
