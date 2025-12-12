@@ -74,11 +74,11 @@ export interface LocationPreference {
 
 // サーバーからのレスポンス仕様に合わせた定義
 export interface WeatherData {
-  condition: 'sun' | 'cloud' | 'rain' | 'snow';
+  condition: string; //'sun' | 'cloud' | 'rain' | 'snow';
   temp_c: number;
   message: string;
-  updated_at: string; // ISO string
-  ttl_seconds: number;
+  updated_at: string; 
+  place?: string; //ttl_seconds: number;
 }
 
 export interface MoodRecord {

@@ -12,15 +12,14 @@ export const fetchWeather = async (params: LocationPreference): Promise<WeatherD
     //緯度・経度をクエリパラメータとしてくっつける
     url += `lat=${params.lat}&lon=${params.lon}`;
   } else if (params.method === 'manual' && params.zip) {
-    //manualの実装は後回しでもOK。だがBackend側での対応が必要
-    //一旦エラーにならないよう、簡易的書く
-    throw new Error("現在、郵便番号検索は準備中です。位置情報を使用してください。");
-    } else {
-      throw new Error("位置情報パラメータが不足しています。");
-    }
+    // Backendに郵便番号の注文をだせるようにする。正しいurlを作る
+    url += `zip=${params.zip}`;
+  } else {
+    throw new Error("位置情報パラメータが不足しています。");
+  }
 
-    console.log(`天気データを取得中...: ${url}`);
-    
+  console.log(`天気データを取得中...: ${url}`);
+
     try {
       // 2.サーバー(/api/weather)に電話をかける
       const response = await fetch(url);
