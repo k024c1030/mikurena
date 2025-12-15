@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { LocationPreference, WeatherData, MoodRecord } from '../types';
 import { fetchWeather } from '../services/weatherService';
@@ -18,7 +17,8 @@ const weatherIconMap: Record<string, string> = {
     rain: '🌧️',
     snow: '❄️',
 };
-// 天気コメント
+
+// ★励ましコメントリスト
 const encouragementMap: Record<string, string> = {
     sun: '洗濯日和ですね！素敵な１日を✨',
     cloud: '深呼吸してリラックスしよう🍃',
@@ -68,23 +68,20 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
     };
 
     const getWeatherData = useCallback(async (pref: LocationPreference) => {
-        setIsLoading(true); // ぐるぐる開始
+        setIsLoading(true);
         setError(null);
 
         try {
-            // Promise.allを使うと「API通信」と「演出用の待ち時間」を同時に走らせられます
-            // これで「最低でも1秒間」はぐるぐるし続けます
             const [data] = await Promise.all([
-                fetchWeather(pref), //天気を取りに行く
-                new Promise(resolve => setTimeout(resolve, 1000)) //演出として１秒待つ
+                fetchWeather(pref),
+                new Promise(resolve => setTimeout(resolve, 1000))
             ]);
-
-            setWeather(data); //データ更新
+            setWeather(data);
         } catch (err) {
             console.error(err);
             setError('天気を更新できませんでした');
         } finally {
-            setIsLoading(false); //ぐるぐる終了
+            setIsLoading(false);
         }
     }, []);
 
@@ -105,7 +102,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     method: 'auto', 
                     lat: latitude, 
                     lon: longitude, 
-                    name: '現在地' // UIには出さないが内部で保持
+                    name: '現在地'
                 };
                 saveLocationPref(pref);
             },
@@ -129,7 +126,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
     };
     
     const handleResetLocation = () => {
-        // 設定メニューから呼び出す想定（今回はエラー時の表示用）
         if (window.confirm('位置情報をリセットしますか？')) {
             setLocationPref(null);
             setWeather(null);
@@ -145,8 +141,9 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
     };
 
+    // ▼▼▼ ここがあなたが頑張って編集した部分（天気の表示） ▼▼▼
     const renderWeatherContent = () => {
-        // A: 位置情報が未設定の場合
+        // パターンA: まだ場所の設定をしていない時
         if (!locationPref) {
             return (
                  <div className="text-center p-4">
@@ -172,7 +169,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             );
         }
 
-        // B: ロード中でデータがまだない場合
+        // パターンB: ロード中で、まだ手元にデータがない時
         if (isLoading && !weather) {
             return (
                 <div className="flex flex-col items-center justify-center h-full space-y-2 animate-pulse">
@@ -182,7 +179,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             );
         }
 
-        // C: データがある場合（キャッシュ含む）
+        // パターンC: 天気データがある時（成功！）
         if (weather) {
             const fetchedDate = new Date(weather.updated_at);
             const dateString = `${fetchedDate.getMonth() + 1}/${fetchedDate.getDate()}`;
@@ -191,7 +188,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
 
             return (
                 <div className="relative w-full h-full flex flex-col justify-between">
-                     {/*エラーがあれば上の方にそっと出す*/}
                      {error && (
                         <div className="absolute top-[-10px] left-[-10px] right-[-10px] bg-red-500 text-white text-[10px] py-1 px-2 rounded-t-lg text-center animate-fade-in-up z-10 shadow-md">
                             {error}
@@ -202,17 +198,15 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                          <div className="flex items-center gap-3">
                             <span className="text-5xl filter drop-shadow-sm">{weatherIconMap[weather.condition] || '🌈'}</span>
                             <div>
-                                //場所の名前を表示
                                 {weather.place && (
                                     <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {weather.place}</p>
-                                    )}
+                                )}
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
                                     {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
                                 </p>
                             </div>
                          </div>
                          <div className="flex flex-col items-end">
-                            //更新ボダン
                              <button 
                                 onClick={handleReload} 
                                 disabled={isLoading}
@@ -223,7 +217,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </button>
-                            //設定変更ボタン
                              <button onClick={handleResetLocation} className="text-[10px] text-slate-300 hover:text-slate-500 mt-1">
                                 設定変更
                             </button>
@@ -231,17 +224,14 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     </div>
                     
                     <div className="mt-2">
-                        //天気の説明
                         <p className="text-sm text-slate-700 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 leading-snug">
                             {weather.message}
                         </p>
-                        //励ましコメントを表示
-                        <p className= "text-xs font-bold text-orange-500 mb-2 ml-1">
-                            //マップが未定義ならデフォルトのメッセージを表示
-                            {(typeof encouragementMap !== 'undefined' ? encouragementMap[weather.condition] : null) || '今日も無理せずマイペースで🌱'}
+                        <p className="text-xs font-bold text-orange-500 mb-2 ml-1">
+                           {(typeof encouragementMap !== 'undefined' ? encouragementMap[weather.condition] : null) || '今日も無理せずマイペースで🌱'}
                         </p>
                         <p className="text-[10px] text-slate-400 text-right">
-                             更新: {dateString}({weekDay}) {timeString}
+                            更新: {dateString}({weekDay}) {timeString}
                             {isOffline && <span className="ml-1 font-bold text-slate-500">(キャッシュ)</span>}
                         </p>
                     </div>
@@ -249,47 +239,41 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             );
         }
 
-        // D: エラーで失敗した時(重要)
-        // 親切なエラーを表示
+        // パターンD: エラーで失敗した時
         const isPermissionError = error?.includes("permission") || error?.includes("denied");
 
         return (
             <div className="text-center p-4 bg-red-50 rounded-lg h-full flex flex-col justify-center">
-                 <p className="text-red-500 text-sm mb-2 font-bold"> 天気を取得できませんでした</p>
-
-                 {/* ユーザーへのお願いメッセージ */}
+                 <p className="text-red-500 text-sm mb-2 font-bold">天気を取得できませんでした</p>
                  <p className="text-xs text-slate-600 mb-4 text-left">
-                    {isPermissionError
-                        ? "位置情報がブロックされています。ブラウザの設定（鍵マーク）から位置情報を許可するか、手動で郵便番号を設定してください。"
-                         :(error || "通信エラーが発生しました")}
+                    {isPermissionError 
+                        ? "位置情報がブロックされています。ブラウザの設定（鍵マークなど）から位置情報を許可するか、手動で郵便番号を設定してください。" 
+                        : (error || "通信エラーが発生しました")}
                  </p>
-
                  <div className="flex gap-2 justify-center">
-                    {/* リトライボタン */}
-                    <button
-                        onClick={() => locationPref && getWeatherData(locationPref)}
+                     <button 
+                        onClick={() => locationPref && getWeatherData(locationPref)} 
                         className="text-xs px-3 py-1.5 bg-white border border-red-200 text-red-500 rounded hover:bg-red-50 transition"
                     >
                         再試行
                     </button>
-                    {/* 手動設定ボタン（逃げ道） */}
-                    <button 
-                        onClick={() => setShowManualModal(true)}
+                     <button 
+                        onClick={() => setShowManualModal(true)} 
                         className="text-xs px-3 py-1.5 bg-slate-600 text-white rounded hover:bg-slate-700 transition"
                     >
                         郵便番号で設定
                     </button>
                  </div>
-
-                 {/* 完全にリセットするボタン */}
                  <div className="mt-4 border-t border-red-100 pt-2">
-                    <button onClick= {handleResetLocation} className= "text-[10px] text-slate-400 underline">
+                    <button onClick={handleResetLocation} className="text-[10px] text-slate-400 underline">
                         設定をリセットして最初から
                     </button>
-                </div>
+                 </div>
             </div>
         );
     };
+
+    // ▼▼▼ 【ここから下】が消えてしまっていた部分▼▼▼
 
     const renderMoodContent = () => {
         return (
@@ -308,7 +292,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                         </p>
                     </div>
                 )}
-                {/* Visual Hint */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -318,6 +301,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         );
     };
 
+    // メインの表示（画面のレイアウト）
     return (
         <div className="w-full max-w-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px] relative overflow-hidden">
