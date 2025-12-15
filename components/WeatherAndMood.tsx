@@ -275,7 +275,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     {/* 手動設定ボタン（逃げ道） */}
                     <button 
                         onClick={() => setShowManualModal(true)}
-                        <button onClick={handleResetLocation} 
                         className="text-xs px-3 py-1.5 bg-slate-600 text-white rounded hover:bg-slate-700 transition"
                     >
                         郵便番号で設定
