@@ -18,6 +18,13 @@ const weatherIconMap: Record<string, string> = {
     rain: '🌧️',
     snow: '❄️',
 };
+// 天気コメント
+const encouragementMap: Record<string, string> = {
+    sun: '洗濯日和ですね！素敵な１日を✨',
+    cloud: '深呼吸してリラックスしよう🍃',
+    rain: '足元に気を付けて。温かい飲み物を☕',
+    snow: '温かくして過ごしてね🧣',    
+};
 
 const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood }) => {
     const [locationPref, setLocationPref] = useState<LocationPreference | null>(null);
@@ -221,8 +228,11 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                         <p className="text-sm text-slate-700 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 leading-snug">
                             {weather.message}
                         </p>
+                        <p className= "text-xs font-bold text-orange-500 mb-2 ml-1">
+                            {encouragementMap[weather.condition] || '今日も無理せずマイペースで🌱'}
+                        </p>
                         <p className="text-[10px] text-slate-400 text-right">
-                            更新: {dateString}({weekDay}) {timeString}
+                             更新: {dateString}({weekDay}) {timeString}
                             {isOffline && <span className="ml-1 font-bold text-slate-500">(キャッシュ)</span>}
                         </p>
                     </div>
