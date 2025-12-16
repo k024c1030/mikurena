@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 interface ManualLocationModalProps {
@@ -11,46 +10,62 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // 簡単なバリデーション (数字とハイフンのみ許可、全角は半角へ変換)
-        const cleanedZip = zip.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/-/g, '');
+        // ★ここでハイフンを空文字に置換して消してしまう！
+        const cleanZip = zip.replace(/-/g, '');
         
-        // 郵便番号形式チェック (3桁-4桁 または 7桁)
-        if (cleanedZip.match(/^\d{7}$/)) {
-            // ハイフンを入れて保存形式を統一 (例: 160-0022)
-            const formattedZip = `${cleanedZip.slice(0, 3)}-${cleanedZip.slice(3)}`;
-            onSave(formattedZip);
+        if (cleanZip.length >= 7) {
+            onSave(cleanZip);
         } else {
-            alert("正しい郵便番号を入力してください (例: 160-0022)");
+            alert("7桁の郵便番号を入力してください");
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 animate-fade-in-up">
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600" aria-label="Close">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">場所を手動で設定</h2>
-                <p className="text-slate-600 text-sm text-center mb-6">郵便番号を入力してください。<br/>(例: 160-0022)</p>
-                <form onSubmit={handleSubmit}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-slide-up">
+                <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-700">場所を手動で設定</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                        ✕
+                    </button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="p-6">
+                    <p className="text-sm text-slate-600 mb-4">
+                        郵便番号を入力してください。<br/>
+                        <span className="text-xs text-slate-400">※おおよその位置情報を取得します</span>
+                    </p>
+
                     <input
                         type="text"
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
-                        placeholder="160-0022"
-                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none text-center text-lg tracking-wider"
-                        required
+                        // ★ここが修正ポイント：入力例の表示
+                        placeholder="例: 1000001 (ハイフンなし)"
+                        className="w-full p-3 border border-slate-300 rounded-lg text-lg tracking-widest text-center focus:ring-2 focus:ring-blue-400 focus:outline-none mb-6"
+                        maxLength={8} 
+                        inputMode="numeric"
+                        pattern="\d*"
                         autoFocus
                     />
-                    <button
-                        type="submit"
-                        disabled={!zip.trim()}
-                        className="mt-4 w-full px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 disabled:bg-slate-300 transition-colors"
-                    >
-                        設定する
-                    </button>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition active:scale-95"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            type="submit"
+                            // ハイフンを除いて7文字未満ならボタンを押せなくする
+                            disabled={zip.replace(/-/g, '').length < 7}
+                            className="flex-1 py-3 px-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 shadow-md transition active:scale-95 disabled:bg-slate-300 disabled:shadow-none"
+                        >
+                            決定
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
