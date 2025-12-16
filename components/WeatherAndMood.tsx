@@ -154,7 +154,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         if (!locationPref) {
             return (
                  <div className="text-center p-4">
-                    <p className="text-sm font-semibold text-slate-700 mb-3">天気表示のため位置情報を使いますか？</p>
+                    <p className="text-sm font-semibold text-slate-700 mb-3">現在地付近の位置情報を取得しますか？</p>
                     
                     <div className="flex gap-2 justify-center">
                         <button 
@@ -227,9 +227,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                          <div className="flex items-center gap-3">
                             <span className="text-5xl filter drop-shadow-sm">{weatherIconMap[weather.condition] || '🌈'}</span>
                             <div>
-                                {weather.place && (
-                                    <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {displayPlaceName}</p>
-                                )}
+                                <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {weather.place || locationPref.name}</p>
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
                                     {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
                                 </p>

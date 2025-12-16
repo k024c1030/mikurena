@@ -47,7 +47,7 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                         type="text"
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
-                        // ★ご希望通り「新宿」の例にしました
+                        // ★「新宿」を例に
                         placeholder="例: 1600022 (新宿)"
                         className="w-full p-3 border border-slate-300 rounded-lg text-lg tracking-widest text-center focus:ring-2 focus:ring-blue-400 focus:outline-none mb-6"
                         inputMode="numeric"
