@@ -102,14 +102,19 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     method: 'auto', 
                     lat: latitude, 
                     lon: longitude, 
-                    name: '現在地'
+                    name: '現在地付近'
                 };
                 saveLocationPref(pref);
             },
             (err) => {
-                setError('位置情報の取得に失敗しました。');
                 console.error(err);
                 setIsLoading(false);
+                //拒否されたとき(code1)を判定
+                if (err.code === 1) {
+                    setError('位置情報が許可されませんでした。');
+                }else {
+                    setError('位置情報の取得に失敗しました。');
+                }
             },
             { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 } 
         );
@@ -186,6 +191,12 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             const weekDay = ['日', '月', '火', '水', '木', '金', '土'][fetchedDate.getDay()];
             const timeString = fetchedDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit'});
 
+            // locationPref.method が 'manual' ならAPIの地名（または郵便番号）を出す
+            // 'auto' なら、変な地名（昭和島など）を出さずに locationPref.name（現在地付近）を優先する
+            const displayPlaceName = locationPref.method === 'manual'
+                ? (weather.place || locationPref.name)
+                : locationPref.name;
+
             return (
                 <div className="relative w-full h-full flex flex-col justify-between">
                      {error && (
@@ -240,7 +251,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
 
         // パターンD: エラーで失敗した時
-        const isPermissionError = error?.includes("permission") || error?.includes("denied");
+        const isPermissionError = error?.includes("許可") || error?.includes("ブロック");
 
         return (
             <div className="text-center p-4 bg-red-50 rounded-lg h-full flex flex-col justify-center">
