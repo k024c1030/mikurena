@@ -41,7 +41,7 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
                         // ★ここが修正ポイント：入力例の表示
-                        placeholder="例: 1000001 (ハイフンなし)"
+                        placeholder="例: 160022 (ハイフンなし)"
                         className="w-full p-3 border border-slate-300 rounded-lg text-lg tracking-widest text-center focus:ring-2 focus:ring-blue-400 focus:outline-none mb-6"
                         maxLength={8} 
                         inputMode="numeric"
