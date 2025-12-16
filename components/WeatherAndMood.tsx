@@ -148,11 +148,14 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
 
     // ▼▼▼ ここがあなたが頑張って編集した部分（天気の表示） ▼▼▼
     const renderWeatherContent = () => {
+        const isPermissionError = error?.includes("許可") || error?.includes("ブロック");
+
         // パターンA: まだ場所の設定をしていない時
         if (!locationPref) {
             return (
                  <div className="text-center p-4">
                     <p className="text-sm font-semibold text-slate-700 mb-3">天気表示のため位置情報を使いますか？</p>
+                    
                     <div className="flex gap-2 justify-center">
                         <button 
                             onClick={handleAllowLocation} 
@@ -169,22 +172,23 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                             手動で設定
                         </button>
                     </div>
+
                     {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+
+                    {/* エラー ⇒ブラウザで設定し直してと指示 */}
+                    {error && (
+                        <div className= "mt-4 p-2 bg-red-50 rounded text-left border border-red-100">
+                            <p className="text-red-500 text-xs font-bold mb-1">
+                                {isPermissionError ? "位置情報が使えません": "エラー"}
+                            </p>
+                            <p className="text-slate-600 text-[10px] leading-tight">
+                                {isPermissionError
+                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒などから許可をリセットするか、手動設定をご利用ください。"
+                                : error}
+                            </p>
+                        </div>
+                    )}
                 </div>
-                //エラー ⇒ブラウザで設定し直してと指示
-                {error && (
-                    <div className= "mt-4 p-2 bg-red-50 rounded text-left border border-red-100">
-                        <p className="text-red-500 text-xs font-bold mb-1">
-                            {isPermissionError ? "位置情報が使えません": "エラー"}
-                        </p>
-                        <p className="text-slate-600 text-[10px] leading-tight">
-                            {isPermissionError
-                            ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒などから許可をリセットするか、手動設定をご利用ください。"
-                            : error}
-                        </p>
-                    </div>
-                )}
-            </div>
             );
         }
 
@@ -265,7 +269,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
 
         // パターンD: エラーで失敗した時
-        const isPermissionError = error?.includes("許可") || error?.includes("ブロック");
 
         return (
             <div className="text-center p-4 bg-red-50 rounded-lg h-full flex flex-col justify-center">
@@ -304,6 +307,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         return (
             <div className="text-center p-2 cursor-pointer h-full flex flex-col justify-center relative group" onClick={() => setShowMoodModal(true)} role="button" aria-label="今日の状態を選択する">
                 <p className="text-sm font-semibold text-slate-700 mb-1">今日の気分</p>
+                
                 {todaysMood ? (
                     <div>
                         <span className="text-4xl filter drop-shadow-sm transition-transform group-hover:scale-110 inline-block">{todaysMood.emoji}</span>
@@ -317,6 +321,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                         </p>
                     </div>
                 )}
+
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
