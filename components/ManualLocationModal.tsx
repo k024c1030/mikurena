@@ -11,15 +11,17 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        // 1. 全角数字を半角に直し、ハイフンなどの余計な記号をすべて消す（数字だけにする）
-        const cleanedZip = zip
+        // 1. 全角数字を半角に直し、数字以外（ハイフン含む）を削除して「純粋な数字」にする
+        const cleanZip = zip
             .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-            .replace(/[^0-9]/g, ''); // 数字以外はすべて削除
+            .replace(/[^0-9]/g, '');
 
-        // 2. 桁数チェック（7桁あるか？）
-        if (cleanedZip.length === 7) {
-            // ★ここが修正点：ハイフンを入れずに、数字だけの状態で渡す！
-            onSave(cleanedZip);
+        // 2. 7桁チェック
+        if (cleanZip.length === 7) {
+            // サーバーのために「3桁-4桁」の形に整形して渡す！
+            // これで "1600022" と入力されても "160-0022" として保存されるのでエラーになりません
+            const formattedZip = `${cleanZip.slice(0, 3)}-${cleanZip.slice(3)}`;
+            onSave(formattedZip);
         } else {
             alert("7桁の郵便番号を入力してください");
         }
@@ -38,16 +40,18 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                 <form onSubmit={handleSubmit} className="p-6">
                     <p className="text-sm text-slate-600 mb-4">
                         郵便番号を入力してください。<br/>
-                        <span className="text-xs text-slate-400">※ハイフンあり・なし どちらでもOK</span>
+                        <span className="text-xs text-slate-400">※ハイフンなしで入力できます</span>
                     </p>
 
                     <input
                         type="text"
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
-                        placeholder="例: 1600022"
+                        // ★ご希望通り「新宿」の例にしました
+                        placeholder="例: 1600022 (新宿)"
                         className="w-full p-3 border border-slate-300 rounded-lg text-lg tracking-widest text-center focus:ring-2 focus:ring-blue-400 focus:outline-none mb-6"
                         inputMode="numeric"
+                        maxLength={8}
                         autoFocus
                     />
 
@@ -61,7 +65,7 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                         </button>
                         <button
                             type="submit"
-                            // 数字以外を消して7桁未満なら押せないようにする
+                            // 数字が7桁未満なら押せないようにする
                             disabled={zip.replace(/[^0-9]/g, '').length < 7}
                             className="flex-1 py-3 px-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 shadow-md transition active:scale-95 disabled:bg-slate-300 disabled:shadow-none"
                         >
