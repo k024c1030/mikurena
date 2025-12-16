@@ -210,7 +210,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                             <span className="text-5xl filter drop-shadow-sm">{weatherIconMap[weather.condition] || '🌈'}</span>
                             <div>
                                 {weather.place && (
-                                    <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {weather.place}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {displayPlaceName}</p>
                                 )}
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
                                     {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
