@@ -179,11 +179,11 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     {error && (
                         <div className= "mt-4 p-2 bg-red-50 rounded text-left border border-red-100">
                             <p className="text-red-500 text-xs font-bold mb-1">
-                                {isPermissionError ? "位置情報が使えません": "エラー"}
+                                {isPermissionError ? "⚠️位置情報が使えません": "エラー"}
                             </p>
                             <p className="text-slate-600 text-[10px] leading-tight">
                                 {isPermissionError
-                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒などから許可をリセットするか、手動設定をご利用ください。"
+                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒から許可をリセットするか、手動設定をご利用ください。"
                                 : error}
                             </p>
                         </div>
