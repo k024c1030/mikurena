@@ -10,11 +10,16 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // ★ここでハイフンを空文字に置換して消してしまう！
-        const cleanZip = zip.replace(/-/g, '');
         
-        if (cleanZip.length >= 7) {
-            onSave(cleanZip);
+        // 1. 全角数字を半角に直し、ハイフンなどの余計な記号をすべて消す（数字だけにする）
+        const cleanedZip = zip
+            .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+            .replace(/[^0-9]/g, ''); // 数字以外はすべて削除
+
+        // 2. 桁数チェック（7桁あるか？）
+        if (cleanedZip.length === 7) {
+            // ★ここが修正点：ハイフンを入れずに、数字だけの状態で渡す！
+            onSave(cleanedZip);
         } else {
             alert("7桁の郵便番号を入力してください");
         }
@@ -33,19 +38,16 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                 <form onSubmit={handleSubmit} className="p-6">
                     <p className="text-sm text-slate-600 mb-4">
                         郵便番号を入力してください。<br/>
-                        <span className="text-xs text-slate-400">※おおよその位置情報を取得します</span>
+                        <span className="text-xs text-slate-400">※ハイフンあり・なし どちらでもOK</span>
                     </p>
 
                     <input
                         type="text"
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
-                        // ★ここが修正ポイント：入力例の表示
-                        placeholder="例: 1600022 (ハイフンなし)"
+                        placeholder="例: 1600022"
                         className="w-full p-3 border border-slate-300 rounded-lg text-lg tracking-widest text-center focus:ring-2 focus:ring-blue-400 focus:outline-none mb-6"
-                        maxLength={8} 
                         inputMode="numeric"
-                        pattern="\d*"
                         autoFocus
                     />
 
@@ -59,8 +61,8 @@ const ManualLocationModal: React.FC<ManualLocationModalProps> = ({ onClose, onSa
                         </button>
                         <button
                             type="submit"
-                            // ハイフンを除いて7文字未満ならボタンを押せなくする
-                            disabled={zip.replace(/-/g, '').length < 7}
+                            // 数字以外を消して7桁未満なら押せないようにする
+                            disabled={zip.replace(/[^0-9]/g, '').length < 7}
                             className="flex-1 py-3 px-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 shadow-md transition active:scale-95 disabled:bg-slate-300 disabled:shadow-none"
                         >
                             決定
