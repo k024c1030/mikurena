@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { LocationPreference, WeatherData, MoodRecord } from '../types';
+import type { WeatherData, MoodRecord } from '../types';
 import { fetchWeather } from '../services/weatherService';
 import ManualLocationModal from './ManualLocationModal';
 import MoodPickerModal from './MoodPickerModal';
 
 const LOCATION_PREF_KEY = 'locationPreference';
 
+// 親から受け取るデータの形
 interface WeatherAndMoodProps {
     moodHistory: MoodRecord[];
     onSaveMood: (record: MoodRecord) => void;
+}
+
+// 保存する場所の設定データ
+interface LocationPreference {
+    method: 'auto' | 'manual';
+    lat?: number;
+    lon?: number;
+    zip?: string;
+    name: string;
 }
 
 const weatherIconMap: Record<string, string> = {
@@ -18,7 +28,6 @@ const weatherIconMap: Record<string, string> = {
     snow: '❄️',
 };
 
-// ★励ましコメントリスト
 const encouragementMap: Record<string, string> = {
     sun: '洗濯日和ですね！素敵な１日を✨',
     cloud: '深呼吸してリラックスしよう🍃',
@@ -31,8 +40,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showManualModal, setShowManualModal] = useState(false);
-    const [showMoodModal, setShowMoodModal] = useState(false);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
     const today = new Date().toISOString().split('T')[0];
@@ -50,7 +57,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         };
     }, []);
 
-    // 初回レンダリング時にlocalStorageから位置情報設定を読み込む
+    // 初回：保存された場所設定を読み込む
     useEffect(() => {
         try {
             const savedPref = localStorage.getItem(LOCATION_PREF_KEY);
@@ -62,19 +69,24 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
     }, []);
 
+    // 設定を保存する関数
     const saveLocationPref = (pref: LocationPreference) => {
         setLocationPref(pref);
         localStorage.setItem(LOCATION_PREF_KEY, JSON.stringify(pref));
     };
 
+    // 天気を取得する関数
     const getWeatherData = useCallback(async (pref: LocationPreference) => {
+        if (isOffline) return; // オフラインなら何もしない
+        
         setIsLoading(true);
         setError(null);
 
         try {
+            // 最低でも500msはローディングを見せる（チラつき防止）
             const [data] = await Promise.all([
                 fetchWeather(pref),
-                new Promise(resolve => setTimeout(resolve, 1000))
+                new Promise(resolve => setTimeout(resolve, 500))
             ]);
             setWeather(data);
         } catch (err) {
@@ -83,15 +95,16 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [isOffline]);
 
-    // 位置情報設定が利用可能または変更されたときに天気を取得
+    // 場所設定が変わったら天気を再取得
     useEffect(() => {
         if (locationPref) {
             getWeatherData(locationPref);
         }
     }, [locationPref, getWeatherData]);
 
+    // GPSで場所を取得
     const handleAllowLocation = () => {
         setIsLoading(true);
         setError(null);
@@ -109,10 +122,9 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             (err) => {
                 console.error(err);
                 setIsLoading(false);
-                //拒否されたとき(code1)を判定
                 if (err.code === 1) {
                     setError('位置情報が許可されませんでした。');
-                }else {
+                } else {
                     setError('位置情報の取得に失敗しました。');
                 }
             },
@@ -120,16 +132,22 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         );
     };
 
-    const handleSaveManualLocation = (zip: string) => {
-        const pref: LocationPreference = { 
-            method: 'manual', 
-            zip: zip,
-            name: `〒${zip}` 
-        };
-        saveLocationPref(pref);
-        setShowManualModal(false);
+    // 手動で郵便番号設定（シンプルにプロンプトを使用）
+    const handleManualLocation = () => {
+        const zip = window.prompt("郵便番号を入力してください（ハイフンなし7桁）\n例: 1000001");
+        if (zip && zip.match(/^\d{7}$/)) {
+            const pref: LocationPreference = { 
+                method: 'manual', 
+                zip: zip,
+                name: `〒${zip}` 
+            };
+            saveLocationPref(pref);
+        } else if (zip) {
+            alert("正しい郵便番号を入力してください");
+        }
     };
     
+    // 設定リセット
     const handleResetLocation = () => {
         if (window.confirm('位置情報をリセットしますか？')) {
             setLocationPref(null);
@@ -139,207 +157,141 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
     };
 
-    const handleReload = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (locationPref) {
-            getWeatherData(locationPref);
+    // 気分を選択した時の処理
+    const handleMoodSelect = (mood: 'GREAT' | 'GOOD' | 'OK' | 'BAD' | 'TERRIBLE') => {
+        onSaveMood({
+            date: today,
+            mood: mood,
+            note: ''
+        });
+    };
+
+    // アイコン取得ヘルパー
+    const getMoodIcon = (mood: string) => {
+        switch (mood) {
+            case 'GREAT': return '😆';
+            case 'GOOD': return '😊';
+            case 'OK': return '😐';
+            case 'BAD': return '😞';
+            case 'TERRIBLE': return '😫';
+            default: return '❓';
         }
     };
 
-    // ▼▼▼ ここがあなたが頑張って編集した部分（天気の表示） ▼▼▼
+    // ▼ 左側：天気表示エリア
     const renderWeatherContent = () => {
-        const isPermissionError = error?.includes("許可") || error?.includes("ブロック");
-
-        // パターンA: まだ場所の設定をしていない時
+        // まだ設定がない時
         if (!locationPref) {
             return (
-                 <div className="text-center p-4">
-                    <p className="text-sm font-semibold text-slate-700 mb-3">現在地付近の位置情報を取得しますか？</p>
-                    
+                <div className="text-center p-4">
+                    <p className="text-sm font-bold text-slate-600 mb-3">天気予報を表示しますか？</p>
                     <div className="flex gap-2 justify-center">
-                        <button 
-                            onClick={handleAllowLocation} 
-                            disabled={isLoading}
-                            className="text-xs px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold shadow-sm transition-transform active:scale-95 disabled:bg-slate-300"
-                        >
-                            {isLoading ? '取得中...' : 'はい (推奨)'}
+                        <button onClick={handleAllowLocation} disabled={isLoading} className="text-xs px-3 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 font-bold transition-transform active:scale-95">
+                            {isLoading ? '取得中...' : '現在地を使う'}
                         </button>
-                        <button 
-                            onClick={() => setShowManualModal(true)} 
-                            disabled={isLoading}
-                            className="text-xs px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 border border-slate-300 font-semibold transition-transform active:scale-95 disabled:opacity-50"
-                        >
-                            手動で設定
+                        <button onClick={handleManualLocation} disabled={isLoading} className="text-xs px-3 py-2 bg-slate-100 text-slate-600 rounded-lg border border-slate-300 font-bold hover:bg-slate-200 transition-transform active:scale-95">
+                            郵便番号
                         </button>
                     </div>
-
                     {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-
-                    {/* エラー ⇒ブラウザで設定し直してと指示 */}
-                    {error && (
-                        <div className= "mt-4 p-2 bg-red-50 rounded text-left border border-red-100">
-                            <p className="text-red-500 text-xs font-bold mb-1">
-                                {isPermissionError ? "⚠️位置情報が使えません": "エラー"}
-                            </p>
-                            <p className="text-slate-600 text-[10px] leading-tight">
-                                {isPermissionError
-                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒から許可をリセットするか、手動設定をご利用ください。"
-                                : error}
-                            </p>
-                        </div>
-                    )}
                 </div>
             );
         }
 
-        // パターンB: ロード中で、まだ手元にデータがない時
+        // ロード中
         if (isLoading && !weather) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full space-y-2 animate-pulse">
-                    <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
-                    <div className="w-32 h-4 bg-slate-200 rounded"></div>
-                </div>
-            );
+            return <div className="animate-pulse text-slate-400 text-sm">天気を確認中...</div>;
         }
 
-        // パターンC: 天気データがある時（成功！）
+        // 天気データあり
         if (weather) {
-            const fetchedDate = new Date(weather.updated_at);
-            const dateString = `${fetchedDate.getMonth() + 1}/${fetchedDate.getDate()}`;
-            const weekDay = ['日', '月', '火', '水', '木', '金', '土'][fetchedDate.getDay()];
-            const timeString = fetchedDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit'});
-
-            // locationPref.method が 'manual' ならAPIの地名（または郵便番号）を出す
-            // 'auto' なら、変な地名（昭和島など）を出さずに locationPref.name（現在地付近）を優先する
-            const displayPlaceName = locationPref.method === 'manual'
-                ? (weather.place || locationPref.name)
-                : locationPref.name;
-
             return (
-                <div className="relative w-full h-full flex flex-col justify-between">
-                     {error && (
-                        <div className="absolute top-[-10px] left-[-10px] right-[-10px] bg-red-500 text-white text-[10px] py-1 px-2 rounded-t-lg text-center animate-fade-in-up z-10 shadow-md">
-                            {error}
-                        </div>
-                    )}
-
+                <div className="w-full h-full flex flex-col justify-between">
                     <div className="flex items-start justify-between">
                          <div className="flex items-center gap-3">
                             <span className="text-5xl filter drop-shadow-sm">{weatherIconMap[weather.condition] || '🌈'}</span>
                             <div>
                                 <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {weather.place || locationPref.name}</p>
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
-                                    {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
+                                    {Math.round(weather.temp)}<span className="text-lg align-top">°C</span>
                                 </p>
                             </div>
                          </div>
                          <div className="flex flex-col items-end">
-                             <button 
-                                onClick={handleReload} 
-                                disabled={isLoading}
-                                className={`p-1.5 rounded-full hover:bg-slate-100 transition-colors ${isLoading ? 'animate-spin text-blue-500' : 'text-slate-400'}`}
-                                aria-label="再読込"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                            </button>
-                             <button onClick={handleResetLocation} className="text-[10px] text-slate-300 hover:text-slate-500 mt-1">
-                                設定変更
-                            </button>
+                             <button onClick={() => getWeatherData(locationPref)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors">
+                                ↺
+                             </button>
+                             <button onClick={handleResetLocation} className="text-[10px] text-slate-300 hover:text-red-400 mt-1">
+                                解除
+                             </button>
                          </div>
                     </div>
                     
                     <div className="mt-2">
-                        <p className="text-sm text-slate-700 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 leading-snug">
-                            {weather.message}
-                        </p>
-                        <p className="text-xs font-bold text-orange-500 mb-2 ml-1">
+                        <p className="text-xs font-bold text-orange-500 mb-1">
                            {(typeof encouragementMap !== 'undefined' ? encouragementMap[weather.condition] : null) || '今日も無理せずマイペースで🌱'}
                         </p>
-                        <p className="text-[10px] text-slate-400 text-right">
-                            更新: {dateString}({weekDay}) {timeString}
-                            {isOffline && <span className="ml-1 font-bold text-slate-500">(キャッシュ)</span>}
-                        </p>
+                        {isOffline && <span className="text-[10px] text-slate-400">(オフライン表示)</span>}
                     </div>
                 </div>
             );
         }
 
-        // パターンD: エラーで失敗した時
-
+        // エラー時
         return (
-            <div className="text-center p-4 bg-red-50 rounded-lg h-full flex flex-col justify-center">
-                 <p className="text-red-500 text-sm mb-2 font-bold">天気を取得できませんでした</p>
-                 <p className="text-xs text-slate-600 mb-4 text-left">
-                    {isPermissionError 
-                        ? "位置情報がブロックされています。ブラウザの設定（鍵マークなど）から位置情報を許可するか、手動で郵便番号を設定してください。" 
-                        : (error || "通信エラーが発生しました")}
-                 </p>
-                 <div className="flex gap-2 justify-center">
-                     <button 
-                        onClick={() => locationPref && getWeatherData(locationPref)} 
-                        className="text-xs px-3 py-1.5 bg-white border border-red-200 text-red-500 rounded hover:bg-red-50 transition"
-                    >
-                        再試行
-                    </button>
-                     <button 
-                        onClick={() => setShowManualModal(true)} 
-                        className="text-xs px-3 py-1.5 bg-slate-600 text-white rounded hover:bg-slate-700 transition"
-                    >
-                        郵便番号で設定
-                    </button>
-                 </div>
-                 <div className="mt-4 border-t border-red-100 pt-2">
-                    <button onClick={handleResetLocation} className="text-[10px] text-slate-400 underline">
-                        設定をリセットして最初から
-                    </button>
-                 </div>
+            <div className="text-center">
+                <p className="text-red-500 text-xs mb-2">{error || "取得失敗"}</p>
+                <button onClick={handleResetLocation} className="text-xs underline text-slate-400">再設定する</button>
             </div>
         );
     };
 
-    // ▼▼▼ 【ここから下】が消えてしまっていた部分▼▼▼
-
+    // ▼ 右側：気分選択エリア
     const renderMoodContent = () => {
-        return (
-            <div className="text-center p-2 cursor-pointer h-full flex flex-col justify-center relative group" onClick={() => setShowMoodModal(true)} role="button" aria-label="今日の状態を選択する">
-                <p className="text-sm font-semibold text-slate-700 mb-1">今日の気分</p>
-                
-                {todaysMood ? (
-                    <div>
-                        <span className="text-4xl filter drop-shadow-sm transition-transform group-hover:scale-110 inline-block">{todaysMood.emoji}</span>
-                        <p className="font-bold text-slate-700 mt-1">{todaysMood.score > 0 ? '+' : ''}{todaysMood.score}</p>
-                    </div>
-                ) : (
-                    <div>
-                         <span className="text-4xl opacity-50 grayscale group-hover:grayscale-0 transition-all">🙂</span>
-                        <p className="font-bold text-slate-400 mt-1 text-xs">
-                           タップして記録
-                        </p>
-                    </div>
-                )}
+        if (todaysMood) {
+            return (
+                <div className="text-center h-full flex flex-col justify-center animate-fade-in">
+                    <p className="text-xs text-slate-400 font-bold mb-1">今日の気分</p>
+                    <div className="text-5xl mb-1">{getMoodIcon(todaysMood.mood)}</div>
+                    <p className="text-slate-600 font-bold text-sm">記録済み</p>
+                    <button 
+                        onClick={() => onSaveMood({ ...todaysMood, mood: 'OK' })} // ダミー更新でリセット等を実装可
+                        className="text-[10px] text-slate-300 mt-2 underline hover:text-slate-500"
+                    >
+                        変更する
+                    </button>
+                </div>
+            );
+        }
 
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
+        return (
+            <div className="h-full flex flex-col justify-center">
+                <p className="text-xs text-center text-slate-400 font-bold mb-3">今日の気分は？</p>
+                <div className="flex justify-between gap-1">
+                    {(['GREAT', 'GOOD', 'OK', 'BAD', 'TERRIBLE'] as const).map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => handleMoodSelect(m)}
+                            className="text-2xl hover:scale-125 transition-transform p-1"
+                        >
+                            {getMoodIcon(m)}
+                        </button>
+                    ))}
                 </div>
             </div>
         );
     };
 
-    // メインの表示（画面のレイアウト）
     return (
-        <div className="w-full max-w-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px] relative overflow-hidden">
+        <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 天気パネル */}
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 min-h-[160px] flex items-center justify-center relative overflow-hidden">
                 {renderWeatherContent()}
             </div>
-             <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px]">
+            {/* 気分パネル */}
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 min-h-[160px] flex items-center justify-center">
                 {renderMoodContent()}
             </div>
-            {showManualModal && <ManualLocationModal onClose={() => setShowManualModal(false)} onSave={handleSaveManualLocation} />}
-            {showMoodModal && <MoodPickerModal onClose={() => setShowMoodModal(false)} onSave={onSaveMood} moodHistory={moodHistory} />}
         </div>
     );
 };

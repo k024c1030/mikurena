@@ -20,7 +20,21 @@ interface HomeProps {
   onSaveMood: (record: MoodRecord) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, onDevKill, powerBank, toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood }) => {
+const Home: React.FC<HomeProps> = ({
+   onStart, 
+   onSaveAndStart, 
+   onSaveName, 
+   aiName, 
+   monster, 
+   onAttack, 
+   onDevKill, 
+   powerBank, 
+   toDoList, 
+   onToggleToDo, 
+   onOpenToDo, 
+   onDeleteToDo, 
+   onToggleFavoriteToDo, 
+   moodHistory, onSaveMood }) => {
   const [nameInput, setNameInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -106,8 +120,13 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
   // --- Chat Start View ---
   return (
     <div className="flex flex-col items-center justify-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up">
-       <WeatherAndMood moodHistory={moodHistory} onSaveMood={onSaveMood} />
-
+    // 天気気分セクション
+    <section>
+       <WeatherAndMood
+        moodHistory={moodHistory} 
+        onSaveMood={onSaveMood} />
+    </section>
+      
        <div className="w-full max-w-sm mb-8">
         <h2 className="text-xl font-bold text-slate-700 mb-3 text-left cursor-pointer hover:text-teal-600 transition-colors" onClick={onOpenToDo}>
             今日のToDo
