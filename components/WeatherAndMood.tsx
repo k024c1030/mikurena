@@ -154,7 +154,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         if (!locationPref) {
             return (
                  <div className="text-center p-4">
-                    <p className="text-sm font-semibold text-slate-700 mb-3">現在地付近の位置情報を取得しますか？</p>
+                    <p className="text-sm font-semibold text-slate-700 mb-3">天気表示のため位置情報を使いますか？</p>
                     
                     <div className="flex gap-2 justify-center">
                         <button 
@@ -179,11 +179,11 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                     {error && (
                         <div className= "mt-4 p-2 bg-red-50 rounded text-left border border-red-100">
                             <p className="text-red-500 text-xs font-bold mb-1">
-                                {isPermissionError ? "⚠️位置情報が使えません": "エラー"}
+                                {isPermissionError ? "位置情報が使えません": "エラー"}
                             </p>
                             <p className="text-slate-600 text-[10px] leading-tight">
                                 {isPermissionError
-                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒から許可をリセットするか、手動設定をご利用ください。"
+                                ? "ブラウザの設定で位置情報がブロックされています。アドレスバーの鍵マーク🔒などから許可をリセットするか、手動設定をご利用ください。"
                                 : error}
                             </p>
                         </div>
@@ -227,7 +227,9 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                          <div className="flex items-center gap-3">
                             <span className="text-5xl filter drop-shadow-sm">{weatherIconMap[weather.condition] || '🌈'}</span>
                             <div>
-                                <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {weather.place || locationPref.name}</p>
+                                {weather.place && (
+                                    <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {displayPlaceName}</p>
+                                )}
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
                                     {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
                                 </p>
@@ -267,7 +269,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
 
         // パターンD: エラーで失敗した時
-
         return (
             <div className="text-center p-4 bg-red-50 rounded-lg h-full flex flex-col justify-center">
                  <p className="text-red-500 text-sm mb-2 font-bold">天気を取得できませんでした</p>
@@ -299,8 +300,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         );
     };
 
-    // ▼▼▼ 【ここから下】が消えてしまっていた部分▼▼▼
-
     const renderMoodContent = () => {
         return (
             <div className="text-center p-2 cursor-pointer h-full flex flex-col justify-center relative group" onClick={() => setShowMoodModal(true)} role="button" aria-label="今日の状態を選択する">
@@ -329,7 +328,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         );
     };
 
-    // メインの表示（画面のレイアウト）
     return (
         <div className="w-full max-w-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px] relative overflow-hidden">

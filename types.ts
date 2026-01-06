@@ -69,7 +69,7 @@ export interface LocationPreference {
   lat?: number;
   lon?: number;
   zip?: string; // 郵便番号 (手動設定用)
-  name?: string; // 表示用名称（任意）
+  name: string; // 表示用名称
 }
 
 // サーバーからのレスポンス仕様に合わせた定義
@@ -78,7 +78,8 @@ export interface WeatherData {
   temp_c: number;
   message: string;
   updated_at: string; 
-  place?: string; //ttl_seconds: number;
+  place?: string;
+  ttl_seconds?: number;
 }
 
 export interface MoodRecord {
