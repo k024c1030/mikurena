@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -44,6 +45,10 @@
               'confetti-fall': {
                 '0%': { transform: 'translateY(-100%) rotate(0deg)', opacity: 1 },
                 '100%': { transform: 'translateY(100vh) rotate(720deg)', opacity: 0 },
+              },
+              'float': {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-15px)' },
               }
             },
             animation: {
@@ -51,6 +56,7 @@
               'shake': 'shake 0.5s ease-in-out',
               'flash': 'flash 0.3s ease-in-out',
               'confetti-fall': 'confetti-fall linear forwards',
+              'float': 'float 3s ease-in-out infinite',
             }
           }
         }
@@ -67,7 +73,7 @@
     }
     </script>
 </head>
-  <body class="bg-slate-100">
+  <body class="bg-gradient-to-br from-slate-50 to-slate-200 min-h-screen">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
