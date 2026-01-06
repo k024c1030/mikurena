@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import type { Monster, ToDoItem, MoodRecord } from '../types';
 import WeatherAndMood from './WeatherAndMood';
 
+// 親（App.tsx）から受け取るデータの型定義
 interface HomeProps {
   onStart: () => void;
   onSaveAndStart: (name: string) => void;
@@ -21,38 +22,46 @@ interface HomeProps {
   onSaveMood: (record: MoodRecord) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, onDevKill, powerBank, toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood }) => {
+const Home: React.FC<HomeProps> = ({ 
+  // 受け取るデータ（Props）をここで展開しています
+  onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, onDevKill, powerBank, 
+  toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood 
+}) => {
   const [nameInput, setNameInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
+  // AIの名前が保存されていたら入力欄にセットする処理
   useEffect(() => {
     if (aiName) setNameInput(aiName);
   }, [aiName]);
-  
-  const handleSave = () => {
-    if (nameInput.trim()){
-      onSaveName(nameInput);
-      setIsEditingName(false);
-    }
-  }
 
+  // 今日のToDoだけをフィルタリングして表示する準備
   const today = new Date().toISOString().split('T')[0];
   const todaysToDos = toDoList
     .filter(todo => todo.dueDate === today && !todo.isCompleted)
     .sort((a, b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
     
-  // モンスターがいるかどうか
+  // ★重要：モンスターが「存在して」かつ「HPが0より大きい」かチェック
   const isMonsterActive = monster && monster.currentHP > 0;
+  
+  // HPバーの長さを計算
   const hpPercentage = isMonsterActive ? (monster.currentHP / monster.score) * 100 : 0;
 
   return (
     <div className="flex flex-col items-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up pb-32">
        
-       {/* 1. モンスターがいる場合はここにカードを表示（以前はこれだけを表示して終わっていた） */}
+       {/* 
+         ▼▼▼ 画面上部の表示エリア ▼▼▼ 
+         ここだけ条件分岐（三項演算子）で切り替えます。
+         isMonsterActive ? (モンスターがいる時の表示) : (いない時の表示)
+       */}
+       
        {isMonsterActive ? (
+        // === パターンA：モンスターがいる時 ===
         <div className="w-full max-w-md mb-10 animate-fade-in-up">
+            {/* モンスターカードのデザイン */}
             <div className="relative bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl border-2 border-orange-200 p-6 overflow-hidden">
-                {/* 隠し開発ボタン */}
+                {/* 隠し開発ボタン（稲妻マーク） */}
                 <button onClick={onDevKill} className="absolute top-4 right-4 text-slate-300 hover:text-red-400 transition-colors z-10" title="DevKill">⚡</button>
 
                 <div className="flex items-center gap-4 mb-4">
@@ -66,6 +75,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
                      </div>
                 </div>
 
+                {/* HPバー */}
                 <div className="w-full bg-slate-200 rounded-full h-3 mb-4 overflow-hidden">
                     <div className="bg-gradient-to-r from-red-500 to-orange-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${hpPercentage}%` }}></div>
                 </div>
@@ -81,7 +91,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
             <p className="text-xs text-slate-500 mt-2">下のタスクや日記でパワーを貯めよう！👇</p>
         </div>
        ) : (
-        // モンスターがいない時は、通常のタイトルと開始ボタンを表示
+        // === パターンB：モンスターがいない時（いつものタイトル） ===
         <>
             <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-6 tracking-tight">AIセルフケア日記</h1>
             <p className="text-slate-500 text-lg mb-10 leading-relaxed">
@@ -91,6 +101,7 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
                 }
             </p>
 
+            {/* 名前入力または開始ボタン */}
             {(!aiName || isEditingName) ? (
                 <div className="w-full max-w-sm flex flex-col items-center gap-4 animate-fade-in-up mb-12">
                     <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="AIの名前..." className="w-full px-6 py-4 bg-white/80 border border-slate-200 rounded-2xl text-center text-xl shadow-sm focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all" />
@@ -107,10 +118,15 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
         </>
        )}
 
-       {/* 2. ここから下は「常に」表示される機能エリア */}
+       {/* 
+         ▼▼▼ 画面下部の共通エリア（ここはモンスターに関わらず常に表示！） ▼▼▼ 
+         ここが以前は条件分岐の外に弾き出されていたり、表示されない条件になっていた可能性があります。
+       */}
        
+       {/* 1. 天気と気分のコンポーネント */}
        <WeatherAndMood moodHistory={moodHistory} onSaveMood={onSaveMood} />
 
+       {/* 2. 今日のToDoリスト */}
        <div className="w-full max-w-md mb-12">
         <h2 className="text-xl font-bold text-slate-700 mb-4 text-left flex items-center gap-2">
             <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
