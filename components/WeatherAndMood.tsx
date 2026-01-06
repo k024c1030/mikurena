@@ -74,7 +74,7 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         try {
             const [data] = await Promise.all([
                 fetchWeather(pref),
-                new Promise(resolve => setTimeout(resolve, 1000))
+                new Promise(resolve => setTimeout(resolve, 800)) // 演出用ウェイトを少し短縮
             ]);
             setWeather(data);
         } catch (err) {
@@ -146,7 +146,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         }
     };
 
-    // ▼▼▼ ここがあなたが頑張って編集した部分（天気の表示） ▼▼▼
     const renderWeatherContent = () => {
         const isPermissionError = error?.includes("許可") || error?.includes("ブロック");
 
@@ -209,8 +208,6 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
             const weekDay = ['日', '月', '火', '水', '木', '金', '土'][fetchedDate.getDay()];
             const timeString = fetchedDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit'});
 
-            // locationPref.method が 'manual' ならAPIの地名（または郵便番号）を出す
-            // 'auto' なら、変な地名（昭和島など）を出さずに locationPref.name（現在地付近）を優先する
             const displayPlaceName = locationPref.method === 'manual'
                 ? (weather.place || locationPref.name)
                 : locationPref.name;
@@ -231,7 +228,8 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
                                     <p className="text-[10px] text-slate-400 font-bold mb-0.5">📍 {displayPlaceName}</p>
                                 )}
                                 <p className="font-bold text-3xl text-slate-800 tracking-tight">
-                                    {Math.round(weather.temp_c)}<span className="text-lg align-top">°</span>
+                                    {typeof weather.temp_c === 'number' ? Math.round(weather.temp_c) : '--'}
+                                    <span className="text-lg align-top">°</span>
                                 </p>
                             </div>
                          </div>

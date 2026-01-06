@@ -1,4 +1,3 @@
-
 // ------------------------------------------------------------------
 // 1. 道具箱の準備　Vercelが用意しているリクエストとレスポンスの型を読み込む
 // ------------------------------------------------------------------
@@ -41,15 +40,14 @@ export default async function handler(
       // 位置情報の場合
       url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ja`;
       } else if (zip) {
-      // 郵便番号の場合
-      url = `https://api.openweathermap.org/data/2.5/weather?zip=${zip},JP&appid=${apiKey}&units=metric&lang=ja`;
+      // 郵便番号の場合。zipが配列で来る可能性も考慮してString化
+      const zipString = String(zip);
+      url = `https://api.openweathermap.org/data/2.5/weather?zip=${zipString},JP&appid=${apiKey}&units=metric&lang=ja`;
       }
 
       // ----------------------------------------------------------------
       // 6. いざ、問い合わせ（外部通信）
       // ----------------------------------------------------------------
-      // fetch（フェッチ）＝「取ってくる」。インターネット越しに電話をかけます。
-      // await（アウェイト）＝「待つ」。電話が繋がって返事が来るまでここで一時停止します。
       const weatherRes = await fetch(url);
 
       // 天気サイトから「失敗」と言われたらエラー
@@ -60,48 +58,37 @@ export default async function handler(
       // ----------------------------------------------------------------
       // 7. データの翻訳
       // ----------------------------------------------------------------
-      // 返ってきたデータは機械語の塊なので、JavaScriptで扱えるオブジェクト（JSON）に変換します。
       const data = await weatherRes.json();
 
       // ----------------------------------------------------------------
-      // 8. データの選別（ここが今回のポイント！）
+      // 8. データの選別
       // ----------------------------------------------------------------
-      // OpenWeatherMapからは大量のデータが来ますが、アプリに必要なものだけをお皿に盛ります。
-      // これを「整形（フォーマット）」と言います。
       const formattedData = {
         condition: mapCondition(data.weather[0].main),
         temp_c: data.main.temp,
-        message: data.weather[0].description, //天気の説明
-        place: data.name, //郵便番号検索の街の名前
-        updated_at: new Date().toISOString(), //データ取得時間
-        ttl_seconds: 7200, // キャッシュの有効期限（秒）。ここでは2時間
+        message: data.weather[0].description,
+        place: data.name,
+        updated_at: new Date().toISOString(),
+        ttl_seconds: 7200,
       };
 
       // ----------------------------------------------------------------
-      // 9. アプリへの返信 整理したデータをアプリに送り返す  200は「OK！成功！」という意味のコードです。
-      // 整形したデータ（formattedData）を便箋（json）に入れて送り返します。
+      // 9. アプリへの返信
       // ----------------------------------------------------------------
       return response.status(200).json(formattedData);
 
     } catch (error) {
-      // ----------------------------------------------------------------
-      // 10. エラー処理（もしものとき） // 途中で通信が切れたり、プログラムがコケたりしたらここに飛ぶ
-      // ----------------------------------------------------------------
       console.error(error); 
       return response.status(500).json({error:'サーバー内部でエラーが起きました'});
       }
     }
 
-    // ----------------------------------------------------------------
-    // おまけ機能：天気の言葉をアプリの言葉に変換する翻訳機
-    // OpenWeatherMapの英語（Clear, Clouds...）を、このアプリのルール（sun, cloud...）に変換
-    // ----------------------------------------------------------------
     function mapCondition(apiCondition: string): string {
-      const lower = apiCondition.toLowerCase(); //全部小文字にする
+      const lower = apiCondition.toLowerCase();
       if (lower.includes('clear')) return 'sun';
       if (lower.includes('cloud')) return 'cloud';
       if (lower.includes('rain') || lower.includes('drizzle')) return 'rain';
       if (lower.includes('snow')) return 'snow';
-      if (lower.includes('thunder')) return 'rain'; // 雷も雨扱いに
-      return 'sun'; // 分からない時はとりあえず晴れに
+      if (lower.includes('thunder')) return 'rain';
+      return 'sun';
     }
