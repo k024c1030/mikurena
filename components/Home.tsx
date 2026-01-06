@@ -36,49 +36,79 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
     }
   }
 
-  if (monster && monster.currentHP > 0) {
-    const hpPercentage = (monster.currentHP / monster.score) * 100;
-    return (
-        <div className="flex flex-col items-center justify-center text-center p-6 w-full max-w-md mx-auto animate-fade-in-up">
-            <h1 className="text-2xl font-bold text-slate-800 mb-6 drop-shadow-sm">ストレスモンスター出現中！</h1>
-            <div className="relative bg-white/40 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 w-full overflow-hidden">
-                {/* 隠し開発ボタン */}
-                <button onClick={onDevKill} className="absolute top-4 right-4 text-slate-300 hover:text-red-400 transition-colors z-10" title="DevKill">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
-                </button>
-
-                <h2 className="text-3xl font-extrabold text-orange-600 mb-6">{monster.name}</h2>
-                <div className="relative w-64 h-64 mx-auto mb-6">
-                    <div className="absolute inset-0 bg-orange-200/50 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="relative bg-white/80 rounded-2xl p-2 shadow-inner h-full flex items-center justify-center overflow-hidden animate-float">
-                        <img src={monster.imageUrl} alt={monster.name} className="w-full h-full object-contain drop-shadow-lg" />
-                    </div>
-                </div>
-                <div className="w-full bg-slate-200/50 rounded-full h-4 mb-2 overflow-hidden border border-slate-300/30">
-                    <div className="bg-gradient-to-r from-red-500 to-orange-500 h-full rounded-full transition-all duration-1000 ease-out shadow-lg" style={{ width: `${hpPercentage}%` }}></div>
-                </div>
-                <p className="text-sm text-slate-600 font-bold">HP: <span className="text-red-600 text-lg">{monster.currentHP}</span> / {monster.score}</p>
-            </div>
-            <div className="w-full mt-8">
-                <button
-                    onClick={onAttack}
-                    disabled={powerBank <= 0}
-                    className="w-full px-8 py-5 bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl font-bold text-xl hover:from-orange-500 hover:to-red-600 shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:transform-none"
-                >
-                    パワー ({powerBank}) で立ち向かう
-                </button>
-            </div>
-        </div>
-    );
-  }
-
   const today = new Date().toISOString().split('T')[0];
   const todaysToDos = toDoList
     .filter(todo => todo.dueDate === today && !todo.isCompleted)
     .sort((a, b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
+    
+  // モンスターがいるかどうか
+  const isMonsterActive = monster && monster.currentHP > 0;
+  const hpPercentage = isMonsterActive ? (monster.currentHP / monster.score) * 100 : 0;
 
   return (
-    <div className="flex flex-col items-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up">
+    <div className="flex flex-col items-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up pb-32">
+       
+       {/* 1. モンスターがいる場合はここにカードを表示（以前はこれだけを表示して終わっていた） */}
+       {isMonsterActive ? (
+        <div className="w-full max-w-md mb-10 animate-fade-in-up">
+            <div className="relative bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl border-2 border-orange-200 p-6 overflow-hidden">
+                {/* 隠し開発ボタン */}
+                <button onClick={onDevKill} className="absolute top-4 right-4 text-slate-300 hover:text-red-400 transition-colors z-10" title="DevKill">⚡</button>
+
+                <div className="flex items-center gap-4 mb-4">
+                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm overflow-hidden flex-shrink-0 border border-orange-100">
+                        <img src={monster.imageUrl} alt={monster.name} className="w-full h-full object-contain" />
+                     </div>
+                     <div className="text-left flex-grow">
+                        <p className="text-xs text-orange-600 font-bold mb-1">現在出現中！</p>
+                        <h2 className="text-xl font-extrabold text-slate-800 leading-tight">{monster.name}</h2>
+                        <p className="text-xs text-slate-500 mt-1">HP: <span className="text-red-500 font-bold">{monster.currentHP}</span> / {monster.score}</p>
+                     </div>
+                </div>
+
+                <div className="w-full bg-slate-200 rounded-full h-3 mb-4 overflow-hidden">
+                    <div className="bg-gradient-to-r from-red-500 to-orange-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${hpPercentage}%` }}></div>
+                </div>
+
+                <button
+                    onClick={onAttack}
+                    disabled={powerBank <= 0}
+                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-md hover:shadow-lg hover:from-orange-600 hover:to-red-600 transition-all active:scale-95 disabled:grayscale disabled:opacity-50"
+                >
+                    パワー ({powerBank}) で攻撃！
+                </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">下のタスクや日記でパワーを貯めよう！👇</p>
+        </div>
+       ) : (
+        // モンスターがいない時は、通常のタイトルと開始ボタンを表示
+        <>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-6 tracking-tight">AIセルフケア日記</h1>
+            <p className="text-slate-500 text-lg mb-10 leading-relaxed">
+                {aiName && !isEditingName 
+                ? `パートナーの「${aiName}」があなたの心に寄り添います。`
+                : 'あなたの専属AIに名前をつけて、セルフケアを始めましょう。'
+                }
+            </p>
+
+            {(!aiName || isEditingName) ? (
+                <div className="w-full max-w-sm flex flex-col items-center gap-4 animate-fade-in-up mb-12">
+                    <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="AIの名前..." className="w-full px-6 py-4 bg-white/80 border border-slate-200 rounded-2xl text-center text-xl shadow-sm focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all" />
+                    <button onClick={() => onSaveAndStart(nameInput)} disabled={!nameInput.trim()} className="w-full px-10 py-5 bg-teal-500 text-white rounded-2xl font-bold text-xl hover:bg-teal-600 shadow-xl transition-all active:scale-95 disabled:bg-slate-300">決定</button>
+                </div>
+            ) : (
+                <div className="w-full max-w-sm flex flex-col items-center gap-6 animate-fade-in-up mb-12">
+                    <button onClick={onStart} className="w-full px-10 py-5 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-2xl font-bold text-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 shadow-lg">
+                        相談をはじめる
+                    </button>
+                    <button onClick={() => setIsEditingName(true)} className="text-sm text-slate-400 hover:text-slate-600 underline underline-offset-4 decoration-slate-200 transition-colors">AIの名前を変更</button>
+                </div>
+            )}
+        </>
+       )}
+
+       {/* 2. ここから下は「常に」表示される機能エリア */}
+       
        <WeatherAndMood moodHistory={moodHistory} onSaveMood={onSaveMood} />
 
        <div className="w-full max-w-md mb-12">
@@ -107,30 +137,8 @@ const Home: React.FC<HomeProps> = ({ onStart, onSaveAndStart, onSaveName, aiName
             <button onClick={onOpenToDo} className="mt-4 w-full py-2 text-sm text-teal-600 font-bold hover:bg-teal-50 rounded-lg transition-colors">タスクを管理する</button>
         </div>
       </div>
-
-      <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-6 tracking-tight">AIセルフケア日記</h1>
-      <p className="text-slate-500 text-lg mb-10 leading-relaxed">
-        {aiName && !isEditingName 
-          ? `パートナーの「${aiName}」があなたの心に寄り添います。`
-          : 'あなたの専属AIに名前をつけて、セルフケアを始めましょう。'
-        }
-      </p>
       
-      {(!aiName || isEditingName) ? (
-        <div className="w-full max-w-sm flex flex-col items-center gap-4 animate-fade-in-up">
-            <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="AIの名前..." className="w-full px-6 py-4 bg-white/80 border border-slate-200 rounded-2xl text-center text-xl shadow-sm focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all" />
-            <button onClick={() => onSaveAndStart(nameInput)} disabled={!nameInput.trim()} className="w-full px-10 py-5 bg-teal-500 text-white rounded-2xl font-bold text-xl hover:bg-teal-600 shadow-xl transition-all active:scale-95 disabled:bg-slate-300">決定</button>
-        </div>
-      ) : (
-        <div className="w-full max-w-sm flex flex-col items-center gap-6 animate-fade-in-up">
-            <button onClick={onStart} className="w-full px-10 py-5 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-2xl font-bold text-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 shadow-lg">
-                相談をはじめる
-            </button>
-            <button onClick={() => setIsEditingName(true)} className="text-sm text-slate-400 hover:text-slate-600 underline underline-offset-4 decoration-slate-200 transition-colors">AIの名前を変更</button>
-        </div>
-      )}
-      
-       <footer className="w-full text-center mt-20 opacity-50">
+       <footer className="w-full text-center mt-4 opacity-50">
         <p className="text-xs text-slate-400">© 2024 AI Self-Care Companion. Keep breathing.</p>
       </footer>
     </div>
