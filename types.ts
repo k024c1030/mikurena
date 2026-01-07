@@ -78,7 +78,7 @@ export interface WeatherData {
   temp_c: number;
   message: string;
   updated_at: string; 
-  place?: string;
+  place: string;
   ttl_seconds?: number;
 }
 

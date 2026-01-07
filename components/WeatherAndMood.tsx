@@ -20,7 +20,7 @@ const weatherIconMap: Record<string, string> = {
 
 // ★励ましコメントリスト
 const encouragementMap: Record<string, string> = {
-    sun: '洗濯日和ですね！素敵な１日を✨',
+    sun: '気持ちの良いお天気ですね✨',
     cloud: '深呼吸してリラックスしよう🍃',
     rain: '足元に気を付けて。温かい飲み物を☕',
     snow: '温かくして過ごしてね🧣',    
