@@ -1,50 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface ChatInputProps {
-  onSendMessage: (message: string) => void;
-  isLoading: boolean;
+// ブラウザ標準の機能ですが、TypeScriptが「そんな機能知らないよ」とエラーを出すのを防ぎます
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
-  const [text, setText] = useState('');
+type Props = {
+  onSendMessage: (text: string) => void;
+  disabled?: boolean;
+};
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) {
-      onSendMessage(text);
-      setText('');
+const ChatInput: React.FC<Props> = ({ onSendMessage, disabled }) => {
+  const [inputText, setInputText] = useState('');
+  const [isListening, setIsListening] = useState(false); //音声認識中かどうか
+
+  //--- 音声入力の準備 ---
+  // ブラウザによって名前が違うので、どちらか使える方を代入します
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // 実際に使う「認識係」を作ります
+  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
+  useEffect(() => {
+    // もしブラウザが音声入力に対応していなければ何もしない
+    if (!recognition) return;
+
+    // 設定：連続で認識するかどうか（今回は一言ずつなのでfalse）、言語設定
+    recognition.continuous = false;
+    recognition.lang = 'ja-JP';
+    recognition.interimResults = false;
+
+    // 「認識結果が出たとき」の動き
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInputText((prev) => prev + transcript); //今ある文字の後ろに追記
+      setIsListening(false); //聞き取り終了
+    };
+
+    // 「認識が勝手に終わったとき」や「エラー」の動き
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      console.error("音声認識エラー:", event.error);
+      setIsListening(false);
+    };
+  }, []); //最初の一回だけ設定を作ります
+
+  // マイクボタンを押したときの動き
+  const handleVoiceInput = () => {
+    if (!recognition) {
+      alert("このブラウザは音声入力に対応していません。");
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop(); //すでに聞いてるなら止める
+      setIsListening(false);
+    } else {
+      recognition.start(); //聞いてないなら聞き始める
+      setIsListening(true);
     }
   };
-  
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+
+  // --- 音声入力の準備ここまで ---
+
+  const handleSend = () => {
+    if (!inputText.trim()) return;
+    onSendMessage(inputText);
+    setInputText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    //Enterキーで送信(shiftなしの場合)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
+      handleSend();
     }
   };
 
   return (
-    <div className="p-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
-      <form onSubmit={handleSubmit} className="flex items-center space-x-3">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="ここにメッセージを入力してください..."
-          rows={1}
-          className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-400 focus:outline-none resize-none transition-shadow duration-200"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          disabled={isLoading || !text.trim()}
-          className="px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors duration-200"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-            </svg>
-        </button>
-      </form>
+    <div className="p-4 bg-white border-t border-gray-200 flex items-end gap-2">
+      {/* マイクボタン */}
+      <button
+        onClick={handleVoiceInput}
+        disabled={disabled}
+        className={`p-3 rounded-full transition-colors ${
+          isListening 
+            ? 'bg-red-500 text-white animate-pulse' // 聞き取り中は赤く点滅
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+        title="音声入力"
+      >
+        {isListening ? '⏹️':'🎙'}
+      </button>
+
+      {/* 入力エリア */}
+      <textarea
+        className="flex-1 p-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[50px] max-h-[120px]"
+        placeholder={isListening ? "聞こえています...":"メッセージを入力..."}
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        rows={1}
+      />
+      
+      {/* 送信ボタン */}
+      <button
+        onClick={handleSend}
+        disabled={disabled || !inputText.trim()}
+      >
+        ➤
+      </button>
     </div>
   );
 };
