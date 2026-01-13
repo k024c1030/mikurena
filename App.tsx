@@ -296,7 +296,8 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch(appState) {
             case 'CHAT':
-                return <ChatWindow onMonsterGenerated={handleMonsterGenerated} aiName={aiName || 'AIアシスタント'} />;
+                return <ChatWindow onMonsterGenerated={handleMonsterGenerated} 
+                aiName={aiName || 'AIアシスタント'} onBack={() => setAppState('HOME')} />;
             case 'MONSTER_REVEAL':
                 return monster && <MonsterReveal monster={monster} onOpenDiary={() => setShowDiary(true)} onAttack={handleAttack} onDevKill={handleDevKill} onRestart={handleRestart} powerBank={powerBank} />;
             case 'ATTACK_RESULT':

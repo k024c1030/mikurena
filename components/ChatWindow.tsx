@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { ChatMessage, Monster } from '../types';
 import { MessageRole } from '../types';
@@ -10,11 +11,12 @@ import type { Chat } from "@google/genai";
 interface ChatWindowProps {
     onMonsterGenerated: (monster: Monster) => void;
     aiName: string;
+    onBack: () => void; // ホームに戻るための関数を受け取るように追加
 }
 
 const PROPOSAL_CHECK_TAG = '[PROPOSAL_CHECK]';
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ onMonsterGenerated, aiName }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ onMonsterGenerated, aiName, onBack }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 0,
@@ -111,12 +113,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onMonsterGenerated, aiName }) =
   }
 
   return (
-     <div className="flex flex-col h-[85vh] w-full max-w-3xl mx-auto">
-        <header className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-slate-800">心の相談室</h1>
-            <p className="text-slate-500 mt-1">{aiName}が、あなたの話を聞きます。</p>
+    <div className="flex flex-col h-full bg-gray-50 relative">
+      {/* ★ヘッダー部分: 戻るボタンを追加 */}
+      <div className="bg-white/90 backdrop-blur-sm p-3 shadow-sm sticky top-0 z-20 border-b border-slate-200">
+        <div className="max-w-3xl mx-auto flex items-center">
+            <button
+                onClick={onBack}
+                className="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors mr-3 flex items-center gap-1"
+                aria-label="ホームに戻る"
+            >
+                <span className="text-xl">⬅️</span>
+                <span className="text-sm font-bold">ホーム</span>
+            </button>
+        </div>
+      </div>
+
+     <div className="flex flex-col flex-grow w-full max-w-3xl mx-auto p-4 h-full overflow-hidden">
+        <header className="text-center mb-4 shrink-0">
+            <h1 className="text-2xl font-bold text-slate-800">心の相談室</h1>
+            <p className="text-slate-500 mt-1 text-sm">{aiName}が、あなたの話を聞きます。</p>
         </header>
-        <div className="flex flex-col flex-grow bg-white rounded-2xl shadow-lg border border-slate-200">
+        
+        <div className="flex flex-col flex-grow bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden min-h-0">
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex flex-col space-y-4">
               {messages.map((msg) => (
@@ -147,9 +165,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onMonsterGenerated, aiName }) =
               <div ref={messagesEndRef} />
             </div>
           </div>
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
         </div>
-        <div className="mt-6 text-center">
+        
+        <div className="mt-4 text-center shrink-0 pb-4">
              <button
                 onClick={handleAnalyze}
                 disabled={!canAnalyze || isLoading}
@@ -158,6 +177,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onMonsterGenerated, aiName }) =
                 悩みを分析してモンスターを出現させる
             </button>
         </div>
+    </div>
     </div>
   );
 };
