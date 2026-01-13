@@ -18,10 +18,23 @@ export interface Monster {
     imageUrl: string;
 }
 
+// 8つのジャンルを定義
+export type MonsterCategory = 
+  | 'work'     // 学業・仕事
+  | 'relation' // 人間関係
+  | 'self'     // 自己肯定感
+  | 'health'   // 体調・睡眠
+  | 'future'   // 将来・進路
+  | 'money'    // お金・バイト・生活
+  | 'vague'    // なんとなくしんどい
+  | 'love';    // 恋愛
+
 export interface StressAnalysis {
     stressScore: number;
     monsterName: string;
     monsterDescription: string;
+    category: MonsterCategory; // 追加: AIが決めたジャンル
+    type: 1 | 2;               // 追加: AIが決めたタイプ(1 or 2)
 }
 
 export interface StressRecord {

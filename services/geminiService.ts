@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Chat, Type } from "@google/genai";
-import type { ChatMessage, StressAnalysis, Monster } from '../types';
+import type { ChatMessage, StressAnalysis, Monster, MonsterCategory } from '../types';
 import { MessageRole } from '../types';
 
 const SYSTEM_INSTRUCTION_CHAT = `あなたは、日本の優しくて共感力の高いセルフケアアシスタント「{AI_NAME}」です。
@@ -16,13 +16,64 @@ const SYSTEM_INSTRUCTION_CHAT = `あなたは、日本の優しくて共感力�
 シンプルで分かりやすい言葉遣いをしてください。`;
 
 const SYSTEM_INSTRUCTION_ANALYSIS = `あなたはユーザーのチャット履歴を分析する専門家です。
-ユーザーの悩みやネガティブな感情を抽出し、それを具現化したユニークな「ストレスモンスター」として表現してください。
+ユーザーの悩みを分析し、以下の8つのカテゴリーから最も当てはまるものを1つ選んでください。
+また、悩みの深刻度や性質に合わせてタイプ1かタイプ2を選んでください。
 出力は必ず指定されたJSON形式に従ってください。
 
+カテゴリー一覧:
+- work (学業・仕事)
+- relation (人間関係)
+- self (自己肯定感)
+- health (体調・睡眠)
+- future (将来・進路)
+- money (お金・バイト・生活)
+- vague (なんとなくしんどい)
+- love (恋愛)
+
 分析のステップ：
-1. **ストレススコア**: 1から200の数値。
-2. **モンスター名**: 悩みを象徴するユニークで少し愛嬌のある名前。
-3. **モンスターの説明**: モンスターの視覚的特徴。2Dイラスト向けの具体的で奇妙な説明。`;
+1. **stressScore**: 1から200の数値。
+2. **monsterName**: 悩みを象徴するユニークで少し愛嬌のある名前。
+3. **monsterDescription**: モンスターの特徴（短く）。
+4. **category**: 上記カテゴリー一覧から選択。
+5. **type**: 1 または 2 を選択。`;
+
+// ★ここに画像のURLリストを定義します
+// あなたが画像をアップロードしたら、ここのURLを書き換えてください。
+// 今は仮の画像（Placehold.co）を入れています。
+const MONSTER_IMAGES: Record<MonsterCategory, { type1: string[], type2: string[] }> = {
+    work: {
+        type1: ['https://placehold.co/400x400/orange/white?text=Work+Type1+A', 'https://placehold.co/400x400/orange/white?text=Work+Type1+B', 'https://placehold.co/400x400/orange/white?text=Work+Type1+C'],
+        type2: ['https://placehold.co/400x400/orange/white?text=Work+Type2+A', 'https://placehold.co/400x400/orange/white?text=Work+Type2+B', 'https://placehold.co/400x400/orange/white?text=Work+Type2+C']
+    },
+    relation: {
+        type1: ['https://placehold.co/400x400/pink/white?text=Relation+Type1'],
+        type2: ['https://placehold.co/400x400/pink/white?text=Relation+Type2']
+    },
+    self: {
+        type1: ['https://placehold.co/400x400/purple/white?text=Self+Type1'],
+        type2: ['https://placehold.co/400x400/purple/white?text=Self+Type2']
+    },
+    health: {
+        type1: ['https://placehold.co/400x400/green/white?text=Health+Type1'],
+        type2: ['https://placehold.co/400x400/green/white?text=Health+Type2']
+    },
+    future: {
+        type1: ['https://placehold.co/400x400/blue/white?text=Future+Type1'],
+        type2: ['https://placehold.co/400x400/blue/white?text=Future+Type2']
+    },
+    money: {
+        type1: ['https://placehold.co/400x400/yellow/black?text=Money+Type1'],
+        type2: ['https://placehold.co/400x400/yellow/black?text=Money+Type2']
+    },
+    vague: {
+        type1: ['https://placehold.co/400x400/gray/white?text=Vague+Type1'],
+        type2: ['https://placehold.co/400x400/gray/white?text=Vague+Type2']
+    },
+    love: {
+        type1: ['https://placehold.co/400x400/red/white?text=Love+Type1'],
+        type2: ['https://placehold.co/400x400/red/white?text=Love+Type2']
+    }
+};
 
 let ai: GoogleGenAI | null = null;
 
@@ -78,8 +129,10 @@ const analyzeStress = async (history: ChatMessage[]): Promise<StressAnalysis> =>
                     stressScore: { type: Type.INTEGER },
                     monsterName: { type: Type.STRING },
                     monsterDescription: { type: Type.STRING },
+                    category: { type: Type.STRING, enum: ['work', 'relation', 'self', 'health', 'future', 'money', 'vague', 'love'] },
+                    type: { type: Type.INTEGER },
                 },
-                required: ["stressScore", "monsterName", "monsterDescription"],
+                required: ["stressScore", "monsterName", "monsterDescription", "category", "type"],
             },
         },
     });
@@ -87,33 +140,39 @@ const analyzeStress = async (history: ChatMessage[]): Promise<StressAnalysis> =>
     return JSON.parse(response.text) as StressAnalysis;
 };
 
-export async function generateMonsterImage(prompt: string): Promise<string> {
+// カテゴリーとタイプに基づいてランダムな画像URLを取得する関数
+const getMonsterImageUrl = (category: MonsterCategory, type: 1 | 2): string => {
     try {
-        const ai = getAi();
-        const finalPrompt = `A cute 'Yuru-chara' mascot monster: ${prompt}. 
-        Style: Flat 2D vector, thick lines, sticker art, vibrant colors, white background. 
-        IMPORTANT: Non-human creature ONLY.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: finalPrompt }] },
-        });
-
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-            if (part.inlineData) {
-                return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
-            }
+        const categoryData = MONSTER_IMAGES[category];
+        if (!categoryData) {
+            console.warn(`Category ${category} not found, using vague.`);
+            return MONSTER_IMAGES.vague.type1[0];
         }
-        throw new Error("No image data");
-    } catch (error) {
-        console.error("Image generation failed:", error);
-        return '/monsters/kaiju_brown.png';
+
+        const images = type === 1 ? categoryData.type1 : categoryData.type2;
+        if (!images || images.length === 0) {
+             console.warn(`No images for ${category} type ${type}, using type 1.`);
+             return categoryData.type1[0] || MONSTER_IMAGES.vague.type1[0];
+        }
+
+        // ランダムに1枚選ぶ
+        const randomIndex = Math.floor(Math.random() * images.length);
+        return images[randomIndex];
+
+    } catch (e) {
+        console.error("Image selection failed", e);
+        return MONSTER_IMAGES.vague.type1[0];
     }
-}
+};
 
 export const analyzeAndCreateMonster = async (history: ChatMessage[]): Promise<Monster> => {
+    // 1. AIに分析させて、カテゴリーとタイプを決めてもらう
     const analysis = await analyzeStress(history);
-    const imageUrl = await generateMonsterImage(analysis.monsterDescription);
+    
+    // 2. 決定したカテゴリーとタイプから、事前に用意した画像URLを選ぶ
+    // (AIによる画像生成は行わないため、早くて軽い！)
+    const imageUrl = getMonsterImageUrl(analysis.category, analysis.type);
+
     return {
         name: analysis.monsterName,
         description: analysis.monsterDescription,
