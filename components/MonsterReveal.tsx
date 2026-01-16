@@ -6,12 +6,11 @@ interface MonsterRevealProps {
   monster: Monster;
   onOpenDiary: () => void;
   onAttack: () => void;
-  onDevKill: () => void;
   onRestart: () => void;
   powerBank: number;
 }
 
-const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onAttack, onDevKill, onRestart, powerBank }) => {
+const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onAttack, onRestart, powerBank }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center p-6 w-full max-w-md mx-auto animate-fade-in-up">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">ストレスモンスターが現れた！</h1>
@@ -70,14 +69,6 @@ const MonsterReveal: React.FC<MonsterRevealProps> = ({ monster, onOpenDiary, onA
                 </button>
             </div>
         </div>
-
-        {/* 開発用（こっそり） */}
-        <button
-            onClick={onDevKill}
-            className="text-[10px] text-slate-300 hover:text-red-400 mt-4 underline"
-        >
-            [開発用] 強制討伐
-        </button>
       </div>
     </div>
   );

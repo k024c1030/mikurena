@@ -161,15 +161,6 @@ const App: React.FC = () => {
         saveData('monster', updatedMonster);
         saveData('powerBank', remainingPower);
     };
-    
-    const handleDevKill = () => {
-        if (!monster) return;
-        setLastAttackScore(monster.currentHP);
-        const updatedMonster = { ...monster, currentHP: 0 };
-        setMonster(updatedMonster);
-        setAppState('ATTACK_RESULT');
-        saveData('monster', updatedMonster);
-    };
 
     const handleRestart = () => {
         if (monster && monster.currentHP <= 0) {
@@ -381,7 +372,7 @@ const App: React.FC = () => {
                 return <ChatWindow onMonsterGenerated={handleMonsterGenerated} 
                 aiName={aiName || 'AIアシスタント'} onBack={() => setAppState('HOME')} />;
             case 'MONSTER_REVEAL':
-                return monster && <MonsterReveal monster={monster} onOpenDiary={() => setShowDiary(true)} onAttack={handleAttack} onDevKill={handleDevKill} onRestart={handleRestart} powerBank={powerBank} />;
+                return monster && <MonsterReveal monster={monster} onOpenDiary={() => setShowDiary(true)} onAttack={handleAttack} onRestart={handleRestart} powerBank={powerBank} />;
             case 'ATTACK_RESULT':
                 return monster && <AttackResult monster={monster} achievementScore={lastAttackScore} onRestart={handleRestart} />;
             case 'HOME':
@@ -394,7 +385,6 @@ const App: React.FC = () => {
                         aiName={aiName}
                         monster={monster}
                         onAttack={handleAttack}
-                        onDevKill={handleDevKill}
                         powerBank={powerBank}
                         toDoList={toDoList}
                         onToggleToDo={handleToggleToDo}

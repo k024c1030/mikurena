@@ -11,7 +11,6 @@ interface HomeProps {
   aiName: string | null;
   monster: Monster | null;
   onAttack: () => void;
-  onDevKill: () => void;
   powerBank: number;
   toDoList: ToDoItem[];
   onToggleToDo: (id: number) => void;
@@ -24,7 +23,7 @@ interface HomeProps {
 
 const Home: React.FC<HomeProps> = ({ 
   // 受け取るデータ（Props）をここで展開しています
-  onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, onDevKill, powerBank, 
+  onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, powerBank, 
   toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood 
 }) => {
   const [nameInput, setNameInput] = useState('');
@@ -97,9 +96,6 @@ const Home: React.FC<HomeProps> = ({
         <div className="w-full max-w-md mb-10 animate-fade-in-up">
             {/* モンスターカードのデザイン */}
             <div className="relative bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl border-2 border-orange-200 p-6 overflow-hidden">
-                {/* 隠し開発ボタン（稲妻マーク） */}
-                <button onClick={onDevKill} className="absolute top-4 right-4 text-slate-300 hover:text-red-400 transition-colors z-10" title="DevKill">⚡</button>
-
                 <div className="flex items-center gap-4 mb-4">
                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm overflow-hidden flex-shrink-0 border border-orange-100">
                         <img src={monster.imageUrl} alt={monster.name} className="w-full h-full object-contain" />
