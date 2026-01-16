@@ -210,6 +210,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                         type="time"
                                         value={startTime}
                                         onChange={(e) => setStartTime(e.target.value)}
+                                        step="300" 
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         aria-label="Start time"
                                     />
@@ -224,6 +225,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                         type="time"
                                         value={endTime}
                                         onChange={(e) => setEndTime(e.target.value)}
+                                        step="300"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         aria-label="End time"
                                     />
