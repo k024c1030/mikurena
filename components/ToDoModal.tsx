@@ -26,6 +26,9 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
     const [openKebabMenu, setOpenKebabMenu] = useState<number | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     
+    // input要素への参照（プログラムからピッカーを開く必要がある場合用だが、今回は透明inputタップで対応）
+    const dateInputRef = useRef<HTMLInputElement>(null);
+
     const resetForm = () => {
         setTitle('');
         setDueDate('');
@@ -165,55 +168,68 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-slate-400"
                             required
                         />
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                             <div className="relative">
-                                 <input
-                                    type={dueDate ? "date" : "text"}
-                                    onFocus={(e) => e.target.type = 'date'}
-                                    onBlur={(e) => {
-                                        if (!e.target.value) e.target.type = 'text';
-                                    }}
-                                    value={dueDate}
-                                    onChange={(e) => setDueDate(e.target.value)}
-                                    placeholder="日付を設定"
-                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}
-                                />
+                         
+                         {/* 日付・時間入力エリア */}
+                         <div className="space-y-3">
+                            {/* 日付選択行: 今日ボタン + 日付入力 */}
+                            <div className="flex gap-2 h-11">
                                 <button
                                     type="button"
                                     onClick={setToday}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-md transition-colors font-bold z-10"
+                                    className="px-4 bg-teal-100 text-teal-700 hover:bg-teal-200 rounded-lg font-bold transition-colors text-sm flex-shrink-0"
                                 >
                                     今日
                                 </button>
+                                
+                                <div className="relative flex-1">
+                                    {/* 実体のinput (透明にして上に重ねる) */}
+                                    <input
+                                        ref={dateInputRef}
+                                        type="date"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    {/* 見た目用の要素 */}
+                                    <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center justify-between bg-white ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}>
+                                        <span>{dueDate ? dueDate.replace(/-/g, '/') : '日付を設定'}</span>
+                                        <span className="text-xl">📅</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type={startTime ? "time" : "text"}
-                                    onFocus={(e) => e.target.type = 'time'}
-                                    onBlur={(e) => {
-                                        if (!e.target.value) e.target.type = 'text';
-                                    }}
-                                    value={startTime}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                    placeholder="開始 00:00"
-                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${startTime ? 'text-slate-700' : 'text-slate-400'}`}
-                                    aria-label="Start time"
-                                />
+
+                            {/* 時間選択行 */}
+                            <div className="flex items-center gap-2 h-11">
+                                {/* 開始時間 */}
+                                <div className="relative flex-1 h-full">
+                                     <input
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        aria-label="Start time"
+                                    />
+                                    <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white ${startTime ? 'text-slate-700' : 'text-slate-400'}`}>
+                                        {startTime || '開始 00:00'}
+                                    </div>
+                                </div>
                                 <span className="text-slate-400 font-medium">～</span>
-                                <input
-                                    type={endTime ? "time" : "text"}
-                                    onFocus={(e) => e.target.type = 'time'}
-                                    onBlur={(e) => {
-                                        if (!e.target.value) e.target.type = 'text';
-                                    }}
-                                    value={endTime}
-                                    onChange={(e) => setEndTime(e.target.value)}
-                                    placeholder="終了 00:00"
-                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${endTime ? 'text-slate-700' : 'text-slate-400'}`}
-                                    aria-label="End time"
-                                />
+                                {/* 終了時間 */}
+                                <div className="relative flex-1 h-full">
+                                    <input
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        aria-label="End time"
+                                    />
+                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white ${endTime ? 'text-slate-700' : 'text-slate-400'}`}>
+                                        {endTime || '終了 00:00'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
                         <input
                             type="text"
                             value={memo}
