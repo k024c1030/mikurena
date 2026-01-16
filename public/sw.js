@@ -1,6 +1,6 @@
 
 // 手動で更新するバージョン。キャッシュ構造の変更や大きなバグ修正時に更新します。
-const SW_VERSION = "v5-weather-api"; 
+const SW_VERSION = "v6-gyazo-update"; 
 const STATIC_CACHE = `static-${SW_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${SW_VERSION}`;
 
@@ -8,8 +8,7 @@ const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/offline.html",
-  "/manifest.json",
-  "/monsters/kaiju_brown.png"
+  "/manifest.json"
 ];
 
 self.addEventListener("install", (event) => {
