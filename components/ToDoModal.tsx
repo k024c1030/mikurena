@@ -15,6 +15,113 @@ interface ToDoModalProps {
     initialEditId?: number | null;
 }
 
+// --------------------------------------------------------
+// 5分刻みのタイムピッカーコンポーネント
+// --------------------------------------------------------
+const TimePickerOverlay: React.FC<{
+    label: string;
+    initialValue: string;
+    onConfirm: (val: string) => void;
+    onClear: () => void;
+    onCancel: () => void;
+}> = ({ label, initialValue, onConfirm, onClear, onCancel }) => {
+    // 初期値がなければ現在時刻に近い時間をデフォルトにする（例: 09:00）
+    const [selectedHour, setSelectedHour] = useState(initialValue ? initialValue.split(':')[0] : '09');
+    const [selectedMinute, setSelectedMinute] = useState(initialValue ? initialValue.split(':')[1] : '00');
+
+    // 00~23時のリスト
+    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+    // 00~55分の5分刻みリスト
+    const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+    
+    // スクロール位置の自動調整用Ref
+    const hourRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const minuteRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const hourContainerRef = useRef<HTMLDivElement>(null);
+    const minuteContainerRef = useRef<HTMLDivElement>(null);
+
+    // 開いたときに選択中の時間にスクロール
+    useEffect(() => {
+        const hIndex = parseInt(selectedHour);
+        const mIndex = parseInt(selectedMinute) / 5;
+        
+        if (hourRefs.current[hIndex] && hourContainerRef.current) {
+            hourContainerRef.current.scrollTop = hourRefs.current[hIndex]!.offsetTop - 60;
+        }
+        if (minuteRefs.current[mIndex] && minuteContainerRef.current) {
+            minuteContainerRef.current.scrollTop = minuteRefs.current[mIndex]!.offsetTop - 60;
+        }
+    }, []);
+
+    const handleConfirm = () => {
+        onConfirm(`${selectedHour}:${selectedMinute}`);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
+             {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" onClick={onCancel}></div>
+            
+            {/* Picker Body */}
+            <div className="bg-white w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto animate-fade-in-up flex flex-col max-h-[80vh] border border-slate-100">
+                <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center">
+                    <button onClick={onCancel} className="text-slate-500 text-sm px-3 py-2 rounded hover:bg-slate-200 transition-colors">キャンセル</button>
+                    <span className="font-bold text-slate-700">{label}</span>
+                    <button onClick={handleConfirm} className="text-white bg-teal-500 font-bold text-sm px-4 py-2 rounded-lg hover:bg-teal-600 shadow-sm transition-colors">決定</button>
+                </div>
+                
+                <div className="flex h-64 text-sm sm:text-base">
+                    {/* Hours */}
+                    <div className="flex-1 flex flex-col border-r border-slate-100">
+                        <div className="text-center py-1 bg-slate-50 text-xs text-slate-400 font-bold border-b border-slate-100">時</div>
+                        <div ref={hourContainerRef} className="flex-1 overflow-y-auto p-2 grid grid-cols-1 gap-1 content-start">
+                            {hours.map((h, i) => (
+                                <button
+                                    key={h}
+                                    ref={(el) => { hourRefs.current[i] = el; }}
+                                    onClick={() => setSelectedHour(h)}
+                                    className={`py-2 rounded-lg text-center transition-all ${selectedHour === h ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}
+                                >
+                                    {h}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Minutes */}
+                    <div className="flex-1 flex flex-col">
+                        <div className="text-center py-1 bg-slate-50 text-xs text-slate-400 font-bold border-b border-slate-100">分</div>
+                        <div ref={minuteContainerRef} className="flex-1 overflow-y-auto p-2 grid grid-cols-1 gap-1 content-start">
+                             {minutes.map((m, i) => (
+                                <button
+                                    key={m}
+                                    ref={(el) => { minuteRefs.current[i] = el; }}
+                                    onClick={() => setSelectedMinute(m)}
+                                    className={`py-2 rounded-lg text-center transition-all ${selectedMinute === m ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}
+                                >
+                                    {m}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="p-3 border-t border-slate-100 bg-slate-50">
+                    <button 
+                        onClick={onClear} 
+                        className="w-full py-2 text-slate-400 hover:text-red-500 text-sm transition-colors hover:bg-red-50 rounded-lg"
+                    >
+                        時間をクリア
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --------------------------------------------------------
+// メインコンポーネント
+// --------------------------------------------------------
 const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdate, onToggle, onDelete, onToggleFavorite, onReorder, onSortByDate, initialEditId }) => {
     const [title, setTitle] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -25,9 +132,10 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
     const [editingItem, setEditingItem] = useState<ToDoItem | null>(null);
     const [openKebabMenu, setOpenKebabMenu] = useState<number | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
-    
-    // input要素への参照
     const dateInputRef = useRef<HTMLInputElement>(null);
+
+    // タイムピッカーの表示制御
+    const [activeTimePicker, setActiveTimePicker] = useState<'start' | 'end' | null>(null);
 
     const resetForm = () => {
         setTitle('');
@@ -157,7 +265,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                 </button>
                 <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">ToDoリスト</h2>
 
-                {/* Add ToDo Form */}
+                {/*Add ToDo Form*/}
                 <form ref={formRef} onSubmit={handleSubmit} className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="space-y-3">
                          <input
@@ -169,9 +277,9 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             required
                         />
                          
-                         {/* 日付・時間入力エリア */}
+                         {/*日付・時間入力エリア */}
                          <div className="space-y-3">
-                            {/* 日付選択行: [日付入力欄(メイン)] [今日ボタン(サブ)] */}
+                            {/* 日付選択行 */}
                             <div className="flex gap-2 h-11">
                                 <div className="relative flex-1">
                                     {/* 実体のinput (透明にして上に重ねる) */}
@@ -182,7 +290,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                         onChange={(e) => setDueDate(e.target.value)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
-                                    {/* 見た目用の要素 */}
+                                    {/*見た目用の要素 */}
                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center justify-between bg-white ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">📅</span>
@@ -204,35 +312,25 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                 {/* 時計アイコン */}
                                 <span className="text-xl text-slate-400 pl-1">🕒</span>
 
-                                {/* 開始時間 */}
-                                <div className="relative flex-1 h-full">
-                                     <input
-                                        type="time"
-                                        value={startTime}
-                                        onChange={(e) => setStartTime(e.target.value)}
-                                        step="300" 
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        aria-label="Start time"
-                                    />
-                                    <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white ${startTime ? 'text-slate-700' : 'text-slate-400'}`}>
-                                        {startTime || '開始 00:00'}
-                                    </div>
-                                </div>
+                                {/*開始時間 クリックで独自ピッカーを開く*/}
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTimePicker('start')}
+                                    className={`flex-1 h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white hover:bg-slate-50 transition-colors ${startTime ? 'text-slate-700' : 'text-slate-400'}`}
+                                >
+                                    {startTime || '開始 00:00'}
+                                </button>
+                                
                                 <span className="text-slate-400 font-medium">～</span>
-                                {/* 終了時間 */}
-                                <div className="relative flex-1 h-full">
-                                    <input
-                                        type="time"
-                                        value={endTime}
-                                        onChange={(e) => setEndTime(e.target.value)}
-                                        step="300"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        aria-label="End time"
-                                    />
-                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white ${endTime ? 'text-slate-700' : 'text-slate-400'}`}>
-                                        {endTime || '終了 00:00'}
-                                    </div>
-                                </div>
+                                
+                                {/* 終了時間 - クリックで独自ピッカーを開く */}
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTimePicker('end')}
+                                    className={`flex-1 h-full px-3 border border-slate-300 rounded-lg flex items-center bg-white hover:bg-slate-50 transition-colors ${endTime ? 'text-slate-700' : 'text-slate-400'}`}
+                                >
+                                    {endTime || '終了 00:00'}
+                                </button>
                             </div>
                         </div>
 
@@ -383,6 +481,25 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                     )}
                 </div>
             </div>
+
+            {/* Time Picker Modal */}
+            {activeTimePicker && (
+                <TimePickerOverlay
+                    label={activeTimePicker === 'start' ? '開始時間' : '終了時間'}
+                    initialValue={activeTimePicker === 'start' ? startTime : endTime}
+                    onConfirm={(val) => {
+                        if (activeTimePicker === 'start') setStartTime(val);
+                        else setEndTime(val);
+                        setActiveTimePicker(null);
+                    }}
+                    onClear={() => {
+                        if (activeTimePicker === 'start') setStartTime('');
+                        else setEndTime('');
+                        setActiveTimePicker(null);
+                    }}
+                    onCancel={() => setActiveTimePicker(null)}
+                />
+            )}
         </div>
     );
 };
