@@ -148,9 +148,46 @@ export const startChat = (aiName: string): Chat => {
     });
 };
 
+// --- リトライ用のヘルパー関数 ---
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function withRetry<T>(operation: () => Promise<T>, maxRetries = 3, initialDelay = 4000): Promise<T> {
+    let delay = initialDelay;
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            // 429: Resource Exhausted (Rate Limit), 503: Service Unavailable
+            // エラーオブジェクトの構造はライブラリや環境によるため、複数のプロパティをチェック
+            const isRateLimit = error.code === 429 || error.status === 429 || error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED';
+            const isServerOverload = error.code === 503 || error.status === 503;
+
+            // リトライすべきエラーでなければ、即座にエラーを投げる
+            if (!isRateLimit && !isServerOverload) {
+                throw error;
+            }
+
+            // 最後の試行だった場合はエラーを投げる
+            if (i === maxRetries - 1) {
+                console.error(`Max retries reached. Last error:`, error);
+                throw error;
+            }
+
+            console.log(`API Busy (Attempt ${i + 1}/${maxRetries}). Retrying in ${delay}ms...`);
+            await wait(delay);
+            delay *= 2; // 指数バックオフ (4s -> 8s -> 16s)
+        }
+    }
+    throw new Error("Max retries exceeded");
+}
+
 export const sendMessage = async (chatInstance: Chat, message: string, messageId: number): Promise<ChatMessage> => {
   try {
-    const result = await chatInstance.sendMessage({ message });
+    // リトライロジックでラップしてAPIを呼び出す
+    const result = await withRetry(async () => {
+        return await chatInstance.sendMessage({ message });
+    });
+
     return {
       id: messageId,
       role: MessageRole.MODEL,
@@ -161,7 +198,7 @@ export const sendMessage = async (chatInstance: Chat, message: string, messageId
     return {
         id: messageId,
         role: MessageRole.MODEL,
-        text: "通信が少し不安定みたいです。ゆっくりで大丈夫ですよ。"
+        text: "通信が混み合っていて、お返事ができませんでした。少し時間を置いて（1分ほど）、もう一度話しかけてみてください。"
     }
   }
 };
@@ -170,24 +207,27 @@ const analyzeStress = async (history: ChatMessage[]): Promise<StressAnalysis> =>
     const ai = getAi();
     const prompt = `履歴を分析してモンスター化して：\n\n${history.map(m => `${m.role}: ${m.text}`).join('\n')}`;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            systemInstruction: SYSTEM_INSTRUCTION_ANALYSIS,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    stressScore: { type: Type.INTEGER },
-                    monsterName: { type: Type.STRING },
-                    monsterDescription: { type: Type.STRING },
-                    category: { type: Type.STRING, enum: ['work', 'relation', 'self', 'health', 'future', 'money', 'vague', 'love'] },
-                    type: { type: Type.INTEGER },
+    // リトライロジックでラップしてAPIを呼び出す
+    const response = await withRetry(async () => {
+        return await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION_ANALYSIS,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        stressScore: { type: Type.INTEGER },
+                        monsterName: { type: Type.STRING },
+                        monsterDescription: { type: Type.STRING },
+                        category: { type: Type.STRING, enum: ['work', 'relation', 'self', 'health', 'future', 'money', 'vague', 'love'] },
+                        type: { type: Type.INTEGER },
+                    },
+                    required: ["stressScore", "monsterName", "monsterDescription", "category", "type"],
                 },
-                required: ["stressScore", "monsterName", "monsterDescription", "category", "type"],
             },
-        },
+        });
     });
     
     return JSON.parse(response.text) as StressAnalysis;
@@ -210,43 +250,4 @@ const getMonsterImageUrl = (category: MonsterCategory, type: 1 | 2): string => {
         if (images.length >= 6) {
              if (type === 1) {
                  const idx = Math.floor(Math.random() * 3);
-                 selectedUrl = images[idx];
-             } else {
-                 const idx = Math.floor(Math.random() * 3) + 3;
-                 selectedUrl = images[Math.min(idx, images.length - 1)];
-             }
-        } else {
-             // 6枚未満の場合
-             const idx = Math.floor(Math.random() * images.length);
-             selectedUrl = images[idx];
-        }
-
-        // ★ Gyazoの閲覧URL (gyazo.com/xxx) が入力されている場合、
-        // 画像本体のURL (gyazo.com/xxx/raw) に変換する処理を追加
-        if (selectedUrl.includes("gyazo.com") && !selectedUrl.includes("i.gyazo.com") && !selectedUrl.endsWith("/raw") && !selectedUrl.match(/\.(png|jpg|jpeg|gif)$/i)) {
-            selectedUrl = `${selectedUrl}/raw`;
-        }
-
-        return selectedUrl;
-
-    } catch (e) {
-        console.error("Image selection failed", e);
-        return "https://placehold.jp/150x150.png?text=Error";
-    }
-};
-
-export const analyzeAndCreateMonster = async (history: ChatMessage[]): Promise<Monster> => {
-    // 1. AIに分析させて、カテゴリーとタイプを決めてもらう
-    const analysis = await analyzeStress(history);
-    
-    // 2. 決定したカテゴリーとタイプから、URLリストから画像を選ぶ
-    const imageUrl = getMonsterImageUrl(analysis.category, analysis.type);
-
-    return {
-        name: analysis.monsterName,
-        description: analysis.monsterDescription,
-        score: analysis.stressScore,
-        currentHP: analysis.stressScore,
-        imageUrl: imageUrl,
-    };
-};
+                 
