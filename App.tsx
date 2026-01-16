@@ -45,15 +45,27 @@ const App: React.FC = () => {
             
             const savedMonster = localStorage.getItem('monster');
             if (savedMonster) {
-                const parsedMonster = JSON.parse(savedMonster);
-                // ★修正: 昔のローカル画像("/monsters/...")が残っていたら、URLが無効なのでリセットする
-                // これで「赤い箱」問題を自動的に解決します
-                if (parsedMonster.imageUrl && parsedMonster.imageUrl.startsWith('/monsters/')) {
-                    console.log("古い画像パスを検知しました。モンスターデータをリセットします。");
+                try {
+                    const parsedMonster = JSON.parse(savedMonster);
+                    // ★修正: nullチェックを追加。データが壊れている場合はリセットする
+                    if (parsedMonster && typeof parsedMonster === 'object') {
+                        // 昔のローカル画像("/monsters/...")が残っていたらリセット
+                        if (parsedMonster.imageUrl && parsedMonster.imageUrl.startsWith('/monsters/')) {
+                            console.log("古い画像パスを検知しました。モンスターデータをリセットします。");
+                            setMonster(null);
+                            localStorage.removeItem('monster');
+                        } else {
+                            setMonster(parsedMonster);
+                        }
+                    } else {
+                        // nullや不正なデータだった場合
+                        setMonster(null);
+                        localStorage.removeItem('monster');
+                    }
+                } catch (e) {
+                    console.error("Failed to parse monster data", e);
                     setMonster(null);
                     localStorage.removeItem('monster');
-                } else {
-                    setMonster(parsedMonster);
                 }
             }
             

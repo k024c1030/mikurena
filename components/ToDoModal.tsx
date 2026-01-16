@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { ToDoItem } from '../types';
 
@@ -138,6 +139,11 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
         return '';
     };
 
+    const setToday = () => {
+        const today = new Date().toISOString().split('T')[0];
+        setDueDate(today);
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up flex flex-col h-[90vh]">
@@ -156,30 +162,54 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="新しいタスクを入力 (必須)"
-                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none"
+                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-slate-400"
                             required
                         />
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                             <input
-                                type="date"
-                                value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-slate-600"
-                            />
+                             <div className="relative">
+                                 <input
+                                    type={dueDate ? "date" : "text"}
+                                    onFocus={(e) => e.target.type = 'date'}
+                                    onBlur={(e) => {
+                                        if (!e.target.value) e.target.type = 'text';
+                                    }}
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    placeholder="日付を設定"
+                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={setToday}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-md transition-colors font-bold z-10"
+                                >
+                                    今日
+                                </button>
+                            </div>
                             <div className="flex items-center gap-2">
                                 <input
-                                    type="time"
+                                    type={startTime ? "time" : "text"}
+                                    onFocus={(e) => e.target.type = 'time'}
+                                    onBlur={(e) => {
+                                        if (!e.target.value) e.target.type = 'text';
+                                    }}
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-slate-600"
+                                    placeholder="開始 00:00"
+                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${startTime ? 'text-slate-700' : 'text-slate-400'}`}
                                     aria-label="Start time"
                                 />
-                                <span className="text-slate-500 font-medium">～</span>
+                                <span className="text-slate-400 font-medium">～</span>
                                 <input
-                                    type="time"
+                                    type={endTime ? "time" : "text"}
+                                    onFocus={(e) => e.target.type = 'time'}
+                                    onBlur={(e) => {
+                                        if (!e.target.value) e.target.type = 'text';
+                                    }}
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none text-slate-600"
+                                    placeholder="終了 00:00"
+                                    className={`w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none ${endTime ? 'text-slate-700' : 'text-slate-400'}`}
                                     aria-label="End time"
                                 />
                             </div>
@@ -189,7 +219,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
                             placeholder="メモ (任意)"
-                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none"
+                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-slate-400"
                         />
                     </div>
                     <div className="flex gap-2 mt-3">

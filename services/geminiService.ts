@@ -125,6 +125,11 @@ function getAi(){
             apiKey = process.env.API_KEY || '';
         }
         
+        // 余計な空白を除去（コピペミス対策）
+        if (apiKey) {
+            apiKey = apiKey.trim();
+        }
+        
         if (!apiKey) {
             console.error("API Key is missing. Please set VITE_API_KEY in Vercel environment variables.");
             throw new Error("API_KEY not set");
