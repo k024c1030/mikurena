@@ -69,7 +69,7 @@ const Home: React.FC<HomeProps> = ({
   // 時間を見やすくフォーマットする関数
   const formatTimeRange = (start: string | null, end: string | null) => {
       if (!start) return null;
-      if (end) return `${start} ~ ${end}`;
+      if (end) return `${start}～${end}`;
       return start;
   };
 

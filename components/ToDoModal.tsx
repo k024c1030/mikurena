@@ -242,7 +242,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
     
     const getTimeDisplay = (item: ToDoItem) => {
         if (item.startTime && item.endTime) {
-            return `${item.startTime}~${item.endTime}`;
+            return `${item.startTime}～${item.endTime}`;
         }
         if (item.startTime) {
             return item.startTime;
@@ -265,7 +265,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                 </button>
                 <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">ToDoリスト</h2>
 
-                {/*Add ToDo Form*/}
+                {/* Add ToDo Form */}
                 <form ref={formRef} onSubmit={handleSubmit} className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="space-y-3">
                          <input
@@ -277,7 +277,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             required
                         />
                          
-                         {/*日付・時間入力エリア */}
+                         {/* 日付・時間入力エリア */}
                          <div className="space-y-3">
                             {/* 日付選択行 */}
                             <div className="flex gap-2 h-11">
@@ -290,7 +290,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                         onChange={(e) => setDueDate(e.target.value)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
-                                    {/*見た目用の要素 */}
+                                    {/* 見た目用の要素 */}
                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center justify-between bg-white ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">📅</span>
@@ -309,10 +309,8 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
 
                             {/* 時間選択行 */}
                             <div className="flex items-center gap-2 h-11">
-                                {/* 時計アイコン */}
-                                <span className="text-xl text-slate-400 pl-1">🕒</span>
 
-                                {/*開始時間 クリックで独自ピッカーを開く*/}
+                                {/* 開始時間 クリックで独自ピッカーを開く */}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTimePicker('start')}
@@ -323,7 +321,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                 
                                 <span className="text-slate-400 font-medium">～</span>
                                 
-                                {/* 終了時間 - クリックで独自ピッカーを開く */}
+                                {/* 終了時間 クリックで独自ピッカーを開く */}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTimePicker('end')}
