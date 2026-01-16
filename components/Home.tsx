@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Monster, ToDoItem, MoodRecord } from '../types';
 import WeatherAndMood from './WeatherAndMood';
 
@@ -29,11 +29,30 @@ const Home: React.FC<HomeProps> = ({
 }) => {
   const [nameInput, setNameInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
+  
+  // ToDoリストのコンテナを参照するためのRef
+  const todoListRef = useRef<HTMLDivElement>(null);
 
   // AIの名前が保存されていたら入力欄にセットする処理
   useEffect(() => {
     if (aiName) setNameInput(aiName);
   }, [aiName]);
+  
+  // 画面のどこかをタップした時の処理（詳細を閉じる）
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        // タップした場所がToDoリストの中でなければ、詳細表示を解除する
+        if (todoListRef.current && !todoListRef.current.contains(event.target as Node)) {
+            setExpandedTaskId(null);
+        }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 今日のToDoだけをフィルタリングして表示する準備
   const today = new Date().toISOString().split('T')[0];
@@ -46,14 +65,23 @@ const Home: React.FC<HomeProps> = ({
   
   // HPバーの長さを計算
   const hpPercentage = isMonsterActive ? (monster.currentHP / monster.score) * 100 : 0;
+  
+  // 時間を見やすくフォーマットする関数
+  const formatTimeRange = (start: string | null, end: string | null) => {
+      if (!start) return null;
+      if (end) return `${start} ~ ${end}`;
+      return start;
+  };
+
+  const handleTaskClick = (id: number) => {
+      setExpandedTaskId(prev => prev === id ? null : id);
+  };
 
   return (
     <div className="flex flex-col items-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up pb-32">
        
        {/* 
          ▼▼▼ 画面上部の表示エリア ▼▼▼ 
-         ここだけ条件分岐（三項演算子）で切り替えます。
-         isMonsterActive ? (モンスターがいる時の表示) : (いない時の表示)
        */}
        
        {isMonsterActive ? (
@@ -119,33 +147,87 @@ const Home: React.FC<HomeProps> = ({
        )}
 
        {/* 
-         ▼▼▼ 画面下部の共通エリア（ここはモンスターに関わらず常に表示！） ▼▼▼ 
-         ここが以前は条件分岐の外に弾き出されていたり、表示されない条件になっていた可能性があります。
+         ▼▼▼ 画面下部の共通エリア ▼▼▼ 
        */}
        
        {/* 1. 天気と気分のコンポーネント */}
        <WeatherAndMood moodHistory={moodHistory} onSaveMood={onSaveMood} />
 
        {/* 2. 今日のToDoリスト */}
-       <div className="w-full max-w-md mb-12">
+       <div className="w-full max-w-md mb-12" ref={todoListRef}>
         <h2 className="text-xl font-bold text-slate-700 mb-4 text-left flex items-center gap-2">
             <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
             今日のタスク
         </h2>
         <div className="bg-white/60 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-white/80">
             {todaysToDos.length > 0 ? (
-            <ul className="space-y-4">
-                {todaysToDos.map(todo => (
-                <li key={todo.id} className="flex items-center group bg-white/40 p-3 rounded-xl border border-white/50 hover:bg-white/60 transition-all">
-                    <input type="checkbox" checked={todo.isCompleted} onChange={() => onToggleToDo(todo.id)} className="h-6 w-6 rounded-full border-slate-300 text-teal-500 focus:ring-teal-400 cursor-pointer" />
-                    <div className="ml-4 flex-grow text-left">
-                      <span className="text-slate-800 font-medium">{todo.title}</span>
-                    </div>
-                    <button onClick={() => onToggleFavoriteToDo(todo.id)} className={`p-1 transition-colors ${todo.isFavorite ? 'text-yellow-400' : 'text-slate-300 hover:text-yellow-200'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                    </button>
-                </li>
-                ))}
+            <ul className="space-y-3">
+                {todaysToDos.map(todo => {
+                    const isExpanded = expandedTaskId === todo.id;
+                    const timeString = formatTimeRange(todo.startTime, todo.endTime);
+                    
+                    return (
+                        <li key={todo.id} className={`flex flex-col group bg-white/40 rounded-xl border border-white/50 hover:bg-white/60 transition-all overflow-hidden ${isExpanded ? 'bg-white/80 shadow-md ring-1 ring-teal-100' : ''}`}>
+                            {/* 上段：チェックボックス、タイトル、簡易情報、お気に入り */}
+                            <div className="flex items-center p-3">
+                                <input 
+                                    type="checkbox" 
+                                    checked={todo.isCompleted} 
+                                    onChange={() => onToggleToDo(todo.id)} 
+                                    className="h-6 w-6 rounded-full border-slate-300 text-teal-500 focus:ring-teal-400 cursor-pointer flex-shrink-0" 
+                                />
+                                
+                                {/* テキストエリア（タップで展開） */}
+                                <div 
+                                    className="ml-4 flex-grow text-left cursor-pointer" 
+                                    onClick={() => handleTaskClick(todo.id)}
+                                >
+                                    <div className="flex items-center flex-wrap gap-x-2">
+                                        <span className={`text-slate-800 ${isExpanded ? 'font-bold' : 'font-medium'}`}>
+                                            {todo.title}
+                                        </span>
+                                        {/* 閉じてる時に表示する薄い時間 */}
+                                        {!isExpanded && timeString && (
+                                            <span className="text-xs text-slate-400 font-normal">
+                                                {timeString}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => onToggleFavoriteToDo(todo.id)} 
+                                    className={`p-1 transition-colors flex-shrink-0 ${todo.isFavorite ? 'text-yellow-400' : 'text-slate-300 hover:text-yellow-200'}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                </button>
+                            </div>
+
+                            {/* 下段：展開された詳細情報 */}
+                            {isExpanded && (
+                                <div className="px-3 pb-3 pt-0 ml-10 text-left text-sm text-slate-600 animate-fade-in-up">
+                                    <div className="space-y-1 border-t border-slate-100 pt-2 mt-1">
+                                        {timeString && (
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <span>🕒</span>
+                                                <span>{timeString}</span>
+                                            </div>
+                                        )}
+                                        {todo.memo && (
+                                            <div className="flex items-start gap-2 mt-1">
+                                                <span className="flex-shrink-0">📝</span>
+                                                <span className="whitespace-pre-wrap">{todo.memo}</span>
+                                            </div>
+                                        )}
+                                        {!timeString && !todo.memo && (
+                                            <span className="text-slate-400 text-xs italic">詳細情報はありません</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
             ) : (
             <p className="text-slate-400 text-sm py-4 italic">今日のタスクは完了です。ゆっくり休んでくださいね。</p>

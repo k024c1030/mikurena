@@ -26,7 +26,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
     const [openKebabMenu, setOpenKebabMenu] = useState<number | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     
-    // input要素への参照（プログラムからピッカーを開く必要がある場合用だが、今回は透明inputタップで対応）
+    // input要素への参照
     const dateInputRef = useRef<HTMLInputElement>(null);
 
     const resetForm = () => {
@@ -171,16 +171,8 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                          
                          {/* 日付・時間入力エリア */}
                          <div className="space-y-3">
-                            {/* 日付選択行: 今日ボタン + 日付入力 */}
+                            {/* 日付選択行: [日付入力欄(メイン)] [今日ボタン(サブ)] */}
                             <div className="flex gap-2 h-11">
-                                <button
-                                    type="button"
-                                    onClick={setToday}
-                                    className="px-4 bg-teal-100 text-teal-700 hover:bg-teal-200 rounded-lg font-bold transition-colors text-sm flex-shrink-0"
-                                >
-                                    今日
-                                </button>
-                                
                                 <div className="relative flex-1">
                                     {/* 実体のinput (透明にして上に重ねる) */}
                                     <input
@@ -192,14 +184,26 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                     />
                                     {/* 見た目用の要素 */}
                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center justify-between bg-white ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}>
-                                        <span>{dueDate ? dueDate.replace(/-/g, '/') : '日付を設定'}</span>
-                                        <span className="text-xl">📅</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">📅</span>
+                                            <span>{dueDate ? dueDate.replace(/-/g, '/') : '日付を設定'}</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={setToday}
+                                    className="px-4 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-bold transition-colors text-sm flex-shrink-0 border border-slate-200"
+                                >
+                                    今日
+                                </button>
                             </div>
 
                             {/* 時間選択行 */}
                             <div className="flex items-center gap-2 h-11">
+                                {/* 時計アイコン */}
+                                <span className="text-xl text-slate-400 pl-1">🕒</span>
+
                                 {/* 開始時間 */}
                                 <div className="relative flex-1 h-full">
                                      <input
