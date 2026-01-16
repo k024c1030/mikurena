@@ -76,6 +76,14 @@ const Home: React.FC<HomeProps> = ({
   const handleTaskClick = (id: number) => {
       setExpandedTaskId(prev => prev === id ? null : id);
   };
+  
+  const getDifficultyMark = (d: string | undefined) => {
+        switch(d) {
+            case 'easy': return '🟢';
+            case 'hard': return '🔴';
+            default: return '🟡'; 
+        }
+    };
 
   return (
     <div className="flex flex-col items-center text-center p-8 max-w-2xl mx-auto animate-fade-in-up pb-32">
@@ -183,8 +191,9 @@ const Home: React.FC<HomeProps> = ({
                                     onClick={() => handleTaskClick(todo.id)}
                                 >
                                     <div className="flex items-center flex-wrap gap-x-2">
-                                        <span className={`text-slate-800 ${isExpanded ? 'font-bold' : 'font-medium'}`}>
-                                            {todo.title}
+                                        <span className={`text-slate-800 flex items-center gap-1 ${isExpanded ? 'font-bold' : 'font-medium'}`}>
+                                            <span>{getDifficultyMark(todo.difficulty)}</span>
+                                            <span>{todo.title}</span>
                                         </span>
                                         {/* 閉じてる時に表示する薄い時間 */}
                                         {!isExpanded && timeString && (

@@ -61,6 +61,8 @@ export interface DiaryEntry {
     score: number;
 }
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
 export interface ToDoItem {
   id: number;
   title: string;
@@ -71,6 +73,7 @@ export interface ToDoItem {
   isCompleted: boolean;
   isFavorite: boolean;
   order: number;
+  difficulty: Difficulty; // 追加: 難易度
 }
 
 export type AppState = 'HOME' | 'CHAT' | 'MONSTER_REVEAL' | 'ATTACK_RESULT';

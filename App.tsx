@@ -47,9 +47,7 @@ const App: React.FC = () => {
             if (savedMonster) {
                 try {
                     const parsedMonster = JSON.parse(savedMonster);
-                    // ★修正: nullチェックを追加。データが壊れている場合はリセットする
                     if (parsedMonster && typeof parsedMonster === 'object') {
-                        // 昔のローカル画像("/monsters/...")が残っていたらリセット
                         if (parsedMonster.imageUrl && parsedMonster.imageUrl.startsWith('/monsters/')) {
                             console.log("古い画像パスを検知しました。モンスターデータをリセットします。");
                             setMonster(null);
@@ -58,7 +56,6 @@ const App: React.FC = () => {
                             setMonster(parsedMonster);
                         }
                     } else {
-                        // nullや不正なデータだった場合
                         setMonster(null);
                         localStorage.removeItem('monster');
                     }
@@ -97,12 +94,11 @@ const App: React.FC = () => {
                 const isConsecutive = lastLogin === yesterday.toISOString().split('T')[0];
                 const newConsecutiveDays = isConsecutive ? consecutiveDays + 1 : 1;
                 
-                if (newConsecutiveDays > 0) {
-                    const points = newConsecutiveDays * 5;
-                    setPowerBank(prev => prev + points);
-                    setShowLoginBonus(true);
-                    localStorage.setItem('loginBonusInfo', JSON.stringify({ days: newConsecutiveDays, points }));
-                }
+                // ログインボーナスは一律20ポイントに変更
+                const points = 20; 
+                setPowerBank(prev => prev + points);
+                setShowLoginBonus(true);
+                localStorage.setItem('loginBonusInfo', JSON.stringify({ days: newConsecutiveDays, points }));
                 
                 localStorage.setItem('lastLoginDate', today);
                 localStorage.setItem('consecutiveLoginDays', newConsecutiveDays.toString());
@@ -147,14 +143,23 @@ const App: React.FC = () => {
 
     const handleAttack = () => {
         if (!monster || powerBank <= 0) return;
-        setLastAttackScore(powerBank);
+        
+        // 攻撃に使用するパワー（モンスターのHPより多くは消費しないが、アニメーション上は全力を出す）
+        // 仕様変更：余ったポイントは継続して使える
+        const damage = Math.min(powerBank, monster.currentHP);
+        const remainingPower = Math.max(0, powerBank - monster.currentHP); // オーバーキル分は残す
+        
+        setLastAttackScore(powerBank); // 演出用には持っていたパワー全部を表示
+        
         const newHP = Math.max(0, monster.currentHP - powerBank);
         const updatedMonster = { ...monster, currentHP: newHP };
+        
         setMonster(updatedMonster);
-        setPowerBank(0);
+        setPowerBank(remainingPower); // 残りのパワーをセット
         setAppState('ATTACK_RESULT');
+        
         saveData('monster', updatedMonster);
-        saveData('powerBank', 0);
+        saveData('powerBank', remainingPower);
     };
     
     const handleDevKill = () => {
@@ -175,10 +180,24 @@ const App: React.FC = () => {
     };
 
     const handleSaveDiary = (entry: DiaryEntry) => {
-        const bonus = entryToEdit ? 0 : 10;
-        const totalScore = entry.score + bonus;
-        setPowerBank(prev => prev + totalScore);
-        saveData('powerBank', powerBank + totalScore);
+        let pointsToAdd = 0;
+
+        if (entryToEdit) {
+            // 編集モード：スコアが増えた分だけ加算（減っても減算しない）
+            const scoreDiff = entry.score - entryToEdit.score;
+            if (scoreDiff > 0) {
+                pointsToAdd = scoreDiff;
+            }
+        } else {
+            // 新規作成：スコア + ボーナス10pt
+            const bonus = 10;
+            pointsToAdd = entry.score + bonus;
+        }
+
+        if (pointsToAdd > 0) {
+            setPowerBank(prev => prev + pointsToAdd);
+            saveData('powerBank', powerBank + pointsToAdd);
+        }
 
         setDiaryHistory(prev => {
             const existingIndex = prev.findIndex(e => e.date === entry.date);
@@ -214,6 +233,10 @@ const App: React.FC = () => {
     
     // ToDo Handlers
     const handleAddToDo = (item: Omit<ToDoItem, 'id' | 'isCompleted'|'isFavorite'|'order'>) => {
+        // ToDo設定で10ポイント獲得
+        setPowerBank(prev => prev + 10);
+        saveData('powerBank', powerBank + 10);
+
         setToDoList(prev => {
             const newItem: ToDoItem = {
                 ...item,
@@ -237,9 +260,34 @@ const App: React.FC = () => {
     };
     
     const handleToggleToDo = (id: number) => {
+        const item = toDoList.find(i => i.id === id);
+        if (!item) return;
+
+        const isNowCompleted = !item.isCompleted;
+        let points = 0;
+
+        // 難易度に応じたポイント設定
+        switch (item.difficulty) {
+            case 'easy': points = 10; break;
+            case 'normal': points = 20; break;
+            case 'hard': points = 30; break;
+            default: points = 20;
+        }
+
+        if (isNowCompleted) {
+            // 完了したらポイント付与
+            setPowerBank(prev => prev + points);
+            saveData('powerBank', powerBank + points);
+        } else {
+            // 未完了に戻したらポイント没収（負にはしない）
+            const newPower = Math.max(0, powerBank - points);
+            setPowerBank(newPower);
+            saveData('powerBank', newPower);
+        }
+
         setToDoList(prev => {
-            const newList = prev.map(item =>
-                item.id === id ? { ...item, isCompleted: !item.isCompleted } : item
+            const newList = prev.map(t =>
+                t.id === id ? { ...t, isCompleted: isNowCompleted } : t
             );
             saveData('toDoList', newList);
             return newList;
@@ -287,10 +335,21 @@ const App: React.FC = () => {
     };
 
     const handleSaveSleep = (record: SleepRecord) => {
-        if (record.duration >= 6 && record.duration <= 8) {
-             setPowerBank(prev => prev + 10);
-             saveData('powerBank', powerBank + 10);
+        let points = 0;
+        
+        // 睡眠ボーナスのロジック変更
+        if (record.duration >= 6 && record.duration <= 9) {
+             points = 20; // 基本ボーナス
+             if (record.duration >= 7 && record.duration <= 8) {
+                 points += 10; // 理想的な睡眠ボーナス追加
+             }
         }
+        
+        if (points > 0) {
+            setPowerBank(prev => prev + points);
+            saveData('powerBank', powerBank + points);
+        }
+
         setSleepHistory(prev => {
              const newHistory = [...prev.filter(r => r.date !== record.date), record]
                 .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -405,7 +464,7 @@ const App: React.FC = () => {
                 <LoginBonusModal 
                     onClose={() => setShowLoginBonus(false)}
                     days={JSON.parse(localStorage.getItem('loginBonusInfo') || '{}').days || 1}
-                    points={JSON.parse(localStorage.getItem('loginBonusInfo') || '{}').points || 5}
+                    points={JSON.parse(localStorage.getItem('loginBonusInfo') || '{}').points || 20}
                 />
             )}
 

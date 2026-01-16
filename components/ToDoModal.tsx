@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { ToDoItem } from '../types';
+import type { ToDoItem, Difficulty } from '../types';
 
 interface ToDoModalProps {
     onClose: () => void;
@@ -25,26 +25,18 @@ const TimePickerOverlay: React.FC<{
     onClear: () => void;
     onCancel: () => void;
 }> = ({ label, initialValue, onConfirm, onClear, onCancel }) => {
-    // 初期値がなければ現在時刻に近い時間をデフォルトにする（例: 09:00）
     const [selectedHour, setSelectedHour] = useState(initialValue ? initialValue.split(':')[0] : '09');
     const [selectedMinute, setSelectedMinute] = useState(initialValue ? initialValue.split(':')[1] : '00');
-
-    // 00~23時のリスト
     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-    // 00~55分の5分刻みリスト
     const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
-    
-    // スクロール位置の自動調整用Ref
     const hourRefs = useRef<(HTMLButtonElement | null)[]>([]);
     const minuteRefs = useRef<(HTMLButtonElement | null)[]>([]);
     const hourContainerRef = useRef<HTMLDivElement>(null);
     const minuteContainerRef = useRef<HTMLDivElement>(null);
 
-    // 開いたときに選択中の時間にスクロール
     useEffect(() => {
         const hIndex = parseInt(selectedHour);
         const mIndex = parseInt(selectedMinute) / 5;
-        
         if (hourRefs.current[hIndex] && hourContainerRef.current) {
             hourContainerRef.current.scrollTop = hourRefs.current[hIndex]!.offsetTop - 60;
         }
@@ -59,60 +51,33 @@ const TimePickerOverlay: React.FC<{
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
-             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-auto transition-opacity" onClick={onCancel}></div>
-            
-            {/* Picker Body */}
             <div className="bg-white w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto animate-fade-in-up flex flex-col max-h-[80vh] border border-slate-100">
                 <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center">
                     <button onClick={onCancel} className="text-slate-500 text-sm px-3 py-2 rounded hover:bg-slate-200 transition-colors">キャンセル</button>
                     <span className="font-bold text-slate-700">{label}</span>
                     <button onClick={handleConfirm} className="text-white bg-teal-500 font-bold text-sm px-4 py-2 rounded-lg hover:bg-teal-600 shadow-sm transition-colors">決定</button>
                 </div>
-                
                 <div className="flex h-64 text-sm sm:text-base">
-                    {/* Hours */}
                     <div className="flex-1 flex flex-col border-r border-slate-100">
                         <div className="text-center py-1 bg-slate-50 text-xs text-slate-400 font-bold border-b border-slate-100">時</div>
                         <div ref={hourContainerRef} className="flex-1 overflow-y-auto p-2 grid grid-cols-1 gap-1 content-start">
                             {hours.map((h, i) => (
-                                <button
-                                    key={h}
-                                    ref={(el) => { hourRefs.current[i] = el; }}
-                                    onClick={() => setSelectedHour(h)}
-                                    className={`py-2 rounded-lg text-center transition-all ${selectedHour === h ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}
-                                >
-                                    {h}
-                                </button>
+                                <button key={h} ref={(el) => { hourRefs.current[i] = el; }} onClick={() => setSelectedHour(h)} className={`py-2 rounded-lg text-center transition-all ${selectedHour === h ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}>{h}</button>
                             ))}
                         </div>
                     </div>
-                    
-                    {/* Minutes */}
                     <div className="flex-1 flex flex-col">
                         <div className="text-center py-1 bg-slate-50 text-xs text-slate-400 font-bold border-b border-slate-100">分</div>
                         <div ref={minuteContainerRef} className="flex-1 overflow-y-auto p-2 grid grid-cols-1 gap-1 content-start">
                              {minutes.map((m, i) => (
-                                <button
-                                    key={m}
-                                    ref={(el) => { minuteRefs.current[i] = el; }}
-                                    onClick={() => setSelectedMinute(m)}
-                                    className={`py-2 rounded-lg text-center transition-all ${selectedMinute === m ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}
-                                >
-                                    {m}
-                                </button>
+                                <button key={m} ref={(el) => { minuteRefs.current[i] = el; }} onClick={() => setSelectedMinute(m)} className={`py-2 rounded-lg text-center transition-all ${selectedMinute === m ? 'bg-teal-500 text-white font-bold shadow-md' : 'text-slate-700 hover:bg-slate-100'}`}>{m}</button>
                             ))}
                         </div>
                     </div>
                 </div>
-                
                 <div className="p-3 border-t border-slate-100 bg-slate-50">
-                    <button 
-                        onClick={onClear} 
-                        className="w-full py-2 text-slate-400 hover:text-red-500 text-sm transition-colors hover:bg-red-50 rounded-lg"
-                    >
-                        時間をクリア
-                    </button>
+                    <button onClick={onClear} className="w-full py-2 text-slate-400 hover:text-red-500 text-sm transition-colors hover:bg-red-50 rounded-lg">時間をクリア</button>
                 </div>
             </div>
         </div>
@@ -128,13 +93,14 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [memo, setMemo] = useState('');
+    const [difficulty, setDifficulty] = useState<Difficulty>('normal'); // デフォルトはNormal
+    
     const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
     const [editingItem, setEditingItem] = useState<ToDoItem | null>(null);
     const [openKebabMenu, setOpenKebabMenu] = useState<number | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const dateInputRef = useRef<HTMLInputElement>(null);
 
-    // タイムピッカーの表示制御
     const [activeTimePicker, setActiveTimePicker] = useState<'start' | 'end' | null>(null);
 
     const resetForm = () => {
@@ -143,6 +109,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
         setStartTime('');
         setEndTime('');
         setMemo('');
+        setDifficulty('normal');
         setEditingItem(null);
     };
 
@@ -155,6 +122,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
             setStartTime(itemToEdit.startTime || '');
             setEndTime(itemToEdit.endTime || '');
             setMemo(itemToEdit.memo || '');
+            setDifficulty(itemToEdit.difficulty || 'normal');
             formRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [initialEditId, toDoList]);
@@ -166,6 +134,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
         setStartTime(item.startTime || '');
         setEndTime(item.endTime || '');
         setMemo(item.memo || '');
+        setDifficulty(item.difficulty || 'normal');
         setOpenKebabMenu(null);
         formRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -186,6 +155,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                 startTime: startTime || null,
                 endTime: endTime || null,
                 memo: memo.trim(),
+                difficulty,
             });
         } else {
             onAdd({
@@ -194,6 +164,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                 startTime: startTime || null,
                 endTime: endTime || null,
                 memo: memo.trim(),
+                difficulty,
             });
         }
         resetForm();
@@ -254,6 +225,14 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
         const today = new Date().toISOString().split('T')[0];
         setDueDate(today);
     };
+    
+    const getDifficultyMark = (d: Difficulty | undefined) => {
+        switch(d) {
+            case 'easy': return '🟢';
+            case 'hard': return '🔴';
+            default: return '🟡'; 
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
@@ -265,7 +244,6 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                 </button>
                 <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">ToDoリスト</h2>
 
-                {/* Add ToDo Form */}
                 <form ref={formRef} onSubmit={handleSubmit} className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="space-y-3">
                          <input
@@ -277,12 +255,9 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             required
                         />
                          
-                         {/* 日付・時間入力エリア */}
                          <div className="space-y-3">
-                            {/* 日付選択行 */}
                             <div className="flex gap-2 h-11">
                                 <div className="relative flex-1">
-                                    {/* 実体のinput (透明にして上に重ねる) */}
                                     <input
                                         ref={dateInputRef}
                                         type="date"
@@ -290,7 +265,6 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                         onChange={(e) => setDueDate(e.target.value)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
-                                    {/* 見た目用の要素 */}
                                     <div className={`w-full h-full px-3 border border-slate-300 rounded-lg flex items-center justify-between bg-white ${dueDate ? 'text-slate-700' : 'text-slate-400'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">📅</span>
@@ -307,10 +281,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                 </button>
                             </div>
 
-                            {/* 時間選択行 */}
                             <div className="flex items-center gap-2 h-11">
-
-                                {/* 開始時間 クリックで独自ピッカーを開く */}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTimePicker('start')}
@@ -318,10 +289,7 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                 >
                                     {startTime || '開始 00:00'}
                                 </button>
-                                
                                 <span className="text-slate-400 font-medium">～</span>
-                                
-                                {/* 終了時間 クリックで独自ピッカーを開く */}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTimePicker('end')}
@@ -339,8 +307,22 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                             placeholder="メモ (任意)"
                             className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-slate-400"
                         />
+
+                        {/* 難易度選択 - メモの下に移動 */}
+                         <div className="flex gap-2 items-center pt-2">
+                            <span className="text-sm font-bold text-slate-500 flex-shrink-0">難易度:</span>
+                            <button type="button" onClick={() => setDifficulty('easy')} className={`flex-1 py-2 px-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${difficulty === 'easy' ? 'bg-green-100 border-green-400 text-green-700 font-bold' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
+                                🟢 Easy
+                            </button>
+                            <button type="button" onClick={() => setDifficulty('normal')} className={`flex-1 py-2 px-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${difficulty === 'normal' ? 'bg-yellow-100 border-yellow-400 text-yellow-700 font-bold' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
+                                🟡 Normal
+                            </button>
+                            <button type="button" onClick={() => setDifficulty('hard')} className={`flex-1 py-2 px-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${difficulty === 'hard' ? 'bg-red-100 border-red-400 text-red-700 font-bold' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
+                                🔴 Hard
+                            </button>
+                         </div>
                     </div>
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-4">
                          <button
                             type="submit"
                             className="flex-1 px-6 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
@@ -388,8 +370,9 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                     id={`todo-item-${item.id}`}
                                 />
                                 <div className="flex-1">
-                                    <label htmlFor={`todo-item-${item.id}`} className="font-medium cursor-pointer text-slate-800">
-                                        {item.title}
+                                    <label htmlFor={`todo-item-${item.id}`} className="font-medium cursor-pointer text-slate-800 flex items-center gap-1">
+                                        <span>{getDifficultyMark(item.difficulty)}</span>
+                                        <span>{item.title}</span>
                                     </label>
                                     {(item.dueDate || item.startTime || item.memo) && (
                                          <div className="text-xs text-slate-500 mt-1 flex items-center flex-wrap gap-x-3 gap-y-1">
@@ -453,8 +436,9 @@ const ToDoModal: React.FC<ToDoModalProps> = ({ onClose, toDoList, onAdd, onUpdat
                                             </div>
                                         </div>
                                         <div className="flex-1 opacity-70">
-                                            <label htmlFor={`todo-item-${item.id}`} className="font-medium line-through text-slate-500 cursor-pointer">
-                                                {item.title}
+                                            <label htmlFor={`todo-item-${item.id}`} className="font-medium line-through text-slate-500 cursor-pointer flex items-center gap-1">
+                                                <span>{getDifficultyMark(item.difficulty)}</span>
+                                                <span>{item.title}</span>
                                             </label>
                                              {(item.dueDate || item.startTime || item.memo) && (
                                                 <div className="text-xs text-slate-500 mt-1 flex items-center flex-wrap gap-x-3 gap-y-1">
