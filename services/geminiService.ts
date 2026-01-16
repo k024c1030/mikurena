@@ -250,4 +250,43 @@ const getMonsterImageUrl = (category: MonsterCategory, type: 1 | 2): string => {
         if (images.length >= 6) {
              if (type === 1) {
                  const idx = Math.floor(Math.random() * 3);
-                 
+                 selectedUrl = images[idx];
+             } else {
+                 const idx = Math.floor(Math.random() * 3) + 3;
+                 selectedUrl = images[Math.min(idx, images.length - 1)];
+             }
+        } else {
+             // 6枚未満の場合
+             const idx = Math.floor(Math.random() * images.length);
+             selectedUrl = images[idx];
+        }
+
+        // ★Gyazoの閲覧URL (gyazo.com/xxx) が入力されている場合
+        // 画像本体のURL (gyazo.com/xxx/raw) に変換する処理を追加
+        if (selectedUrl.includes("gyazo.com") && !selectedUrl.includes("i.gyazo.com") && !selectedUrl.endsWith("/raw") && !selectedUrl.match(/\.(png|jpg|jpeg|gif)$/i)) {
+            selectedUrl = `${selectedUrl}/raw`;
+        }
+
+        return selectedUrl;
+
+    } catch (e) {
+        console.error("Image selection failed", e);
+        return "https://placehold.jp/150x150.png?text=Error";
+    }
+};
+
+export const analyzeAndCreateMonster = async (history: ChatMessage[]): Promise<Monster> => {
+    // 1. AIに分析させて、カテゴリーとタイプを決めてもらう
+    const analysis = await analyzeStress(history);
+    
+    // 2. 決定したカテゴリーとタイプから、URLリストから画像を選ぶ
+    const imageUrl = getMonsterImageUrl(analysis.category, analysis.type);
+
+    return {
+        name: analysis.monsterName,
+        description: analysis.monsterDescription,
+        score: analysis.stressScore,
+        currentHP: analysis.stressScore,
+        imageUrl: imageUrl,
+    };
+};
