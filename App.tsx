@@ -44,7 +44,18 @@ const App: React.FC = () => {
             if (savedAiName) setAiName(savedAiName);
             
             const savedMonster = localStorage.getItem('monster');
-            if (savedMonster) setMonster(JSON.parse(savedMonster));
+            if (savedMonster) {
+                const parsedMonster = JSON.parse(savedMonster);
+                // ★修正: 昔のローカル画像("/monsters/...")が残っていたら、URLが無効なのでリセットする
+                // これで「赤い箱」問題を自動的に解決します
+                if (parsedMonster.imageUrl && parsedMonster.imageUrl.startsWith('/monsters/')) {
+                    console.log("古い画像パスを検知しました。モンスターデータをリセットします。");
+                    setMonster(null);
+                    localStorage.removeItem('monster');
+                } else {
+                    setMonster(parsedMonster);
+                }
+            }
             
             const savedPowerBank = localStorage.getItem('powerBank');
             if (savedPowerBank) setPowerBank(parseInt(savedPowerBank, 10));
