@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { Monster, ToDoItem, MoodRecord } from '../types';
+import type { Monster, ToDoItem } from '../types';
 import WeatherAndMood from './WeatherAndMood';
 
 // 親（App.tsx）から受け取るデータの型定義
@@ -17,14 +17,12 @@ interface HomeProps {
   onOpenToDo: () => void;
   onDeleteToDo: (id: number) => void;
   onToggleFavoriteToDo: (id: number) => void;
-  moodHistory: MoodRecord[];
-  onSaveMood: (record: MoodRecord) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ 
   // 受け取るデータ（Props）をここで展開しています
   onStart, onSaveAndStart, onSaveName, aiName, monster, onAttack, powerBank, 
-  toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo, moodHistory, onSaveMood 
+  toDoList, onToggleToDo, onOpenToDo, onDeleteToDo, onToggleFavoriteToDo
 }) => {
   const [nameInput, setNameInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -57,7 +55,7 @@ const Home: React.FC<HomeProps> = ({
   const today = new Date().toISOString().split('T')[0];
   const todaysToDos = toDoList
     .filter(todo => todo.dueDate === today && !todo.isCompleted)
-    .sort((a, b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
+    .sort((a,b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
     
   // ★重要：モンスターが「存在して」かつ「HPが0より大きい」かチェック
   const isMonsterActive = monster && monster.currentHP > 0;
@@ -154,8 +152,8 @@ const Home: React.FC<HomeProps> = ({
          ▼▼▼ 画面下部の共通エリア ▼▼▼ 
        */}
        
-       {/* 1. 天気と気分のコンポーネント */}
-       <WeatherAndMood moodHistory={moodHistory} onSaveMood={onSaveMood} />
+       {/* 1. 天気コンポーネント (気分機能削除済み) */}
+       <WeatherAndMood />
 
        {/* 2. 今日のToDoリスト */}
        <div className="w-full max-w-md mb-12" ref={todoListRef}>

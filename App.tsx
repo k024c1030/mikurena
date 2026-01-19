@@ -12,7 +12,7 @@ import GraphModal from './components/GraphModal';
 import LoginBonusModal from './components/LoginBonusModal';
 import SleepDiaryModal from './components/SleepDiaryModal';
 import EditDiaryModal from './components/EditDiaryModal';
-import type { AppState, Monster, DiaryEntry, ToDoItem, StressRecord, SleepRecord, MoodRecord } from './types';
+import type { AppState, Monster, DiaryEntry, ToDoItem, StressRecord, SleepRecord } from './types';
 
 const App: React.FC = () => {
     const [appState, setAppState] = useState<AppState>('HOME');
@@ -36,7 +36,6 @@ const App: React.FC = () => {
     const [toDoList, setToDoList] = useState<ToDoItem[]>([]);
     const [stressHistory, setStressHistory] = useState<StressRecord[]>([]);
     const [sleepHistory, setSleepHistory] = useState<SleepRecord[]>([]);
-    const [moodHistory, setMoodHistory] = useState<MoodRecord[]>([]);
 
     const loadData = useCallback(() => {
         try {
@@ -80,9 +79,6 @@ const App: React.FC = () => {
             
             const savedSleep = localStorage.getItem('sleepHistory');
             if (savedSleep) setSleepHistory(JSON.parse(savedSleep));
-
-            const savedMood = localStorage.getItem('moodHistory');
-            if (savedMood) setMoodHistory(JSON.parse(savedMood));
 
             // Login Bonus Check
             const lastLogin = localStorage.getItem('lastLoginDate');
@@ -349,22 +345,6 @@ const App: React.FC = () => {
         });
         setShowSleepDiary(false);
     };
-    
-    const handleSaveMood = (record: MoodRecord) => {
-        setMoodHistory(prev => {
-            const existingIndex = prev.findIndex(r => r.date === record.date);
-            let newHistory;
-            if (existingIndex > -1) {
-                newHistory = [...prev];
-                newHistory[existingIndex] = record;
-            } else {
-                newHistory = [...prev, record];
-            }
-            const sorted = newHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            saveData('moodHistory', sorted);
-            return sorted;
-        });
-    };
 
     const renderContent = () => {
         switch(appState) {
@@ -391,8 +371,6 @@ const App: React.FC = () => {
                         onOpenToDo={() => setShowToDo(true)}
                         onDeleteToDo={handleDeleteToDo}
                         onToggleFavoriteToDo={handleToggleFavoriteToDo}
-                        moodHistory={moodHistory}
-                        onSaveMood={handleSaveMood}
                     />
                 );
         }

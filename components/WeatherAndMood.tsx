@@ -1,15 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import type { LocationPreference, WeatherData, MoodRecord } from '../types';
+import type { LocationPreference, WeatherData } from '../types';
 import { fetchWeather } from '../services/weatherService';
 import ManualLocationModal from './ManualLocationModal';
-import MoodPickerModal from './MoodPickerModal';
 
 const LOCATION_PREF_KEY = 'locationPreference';
-
-interface WeatherAndMoodProps {
-    moodHistory: MoodRecord[];
-    onSaveMood: (record: MoodRecord) => void;
-}
 
 const weatherIconMap: Record<string, string> = {
     sun: '☀️',
@@ -26,17 +21,13 @@ const encouragementMap: Record<string, string> = {
     snow: '温かくして過ごしてね🧣',    
 };
 
-const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood }) => {
+const WeatherAndMood: React.FC = () => {
     const [locationPref, setLocationPref] = useState<LocationPreference | null>(null);
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showManualModal, setShowManualModal] = useState(false);
-    const [showMoodModal, setShowMoodModal] = useState(false);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
-
-    const today = new Date().toISOString().split('T')[0];
-    const todaysMood = moodHistory.find(m => m.date === today);
 
     // オンライン/オフライン状態の監視
     useEffect(() => {
@@ -298,44 +289,12 @@ const WeatherAndMood: React.FC<WeatherAndMoodProps> = ({ moodHistory, onSaveMood
         );
     };
 
-    const renderMoodContent = () => {
-        return (
-            <div className="text-center p-2 cursor-pointer h-full flex flex-col justify-center relative group" onClick={() => setShowMoodModal(true)} role="button" aria-label="今日の状態を選択する">
-                <p className="text-sm font-semibold text-slate-700 mb-1">今日の気分</p>
-                
-                {todaysMood ? (
-                    <div>
-                        <span className="text-4xl filter drop-shadow-sm transition-transform group-hover:scale-110 inline-block">{todaysMood.emoji}</span>
-                        <p className="font-bold text-slate-700 mt-1">{todaysMood.score > 0 ? '+' : ''}{todaysMood.score}</p>
-                    </div>
-                ) : (
-                    <div>
-                         <span className="text-4xl opacity-50 grayscale group-hover:grayscale-0 transition-all">🙂</span>
-                        <p className="font-bold text-slate-400 mt-1 text-xs">
-                           タップして記録
-                        </p>
-                    </div>
-                )}
-
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                </div>
-            </div>
-        );
-    };
-
     return (
-        <div className="w-full max-w-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="w-full max-w-md mb-8">
             <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px] relative overflow-hidden">
                 {renderWeatherContent()}
             </div>
-             <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-center min-h-[160px]">
-                {renderMoodContent()}
-            </div>
             {showManualModal && <ManualLocationModal onClose={() => setShowManualModal(false)} onSave={handleSaveManualLocation} />}
-            {showMoodModal && <MoodPickerModal onClose={() => setShowMoodModal(false)} onSave={onSaveMood} moodHistory={moodHistory} />}
         </div>
     );
 };
